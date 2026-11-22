@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+
+    // Ognuno può scrivere solo i propri voti: un voto a testa per ogni proposta.
+    match /votes/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Ognuno può aggiornare solo il proprio nome.
+    match /members/{uid} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Tutto il resto dell'app: solo chi ha fatto l'accesso.
+    match /{coll}/{id} {
+      allow read, write: if signedIn() && coll in ['songs', 'wishlist', 'sessions', 'covers', 'meta'];
+    }
+  }
+}
