@@ -25,7 +25,7 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   in basso (`#player`) che non si ricarica quando i dati cambiano. I campi link sono `type="text"` perché
   dal telefono il link arriva spesso con del testo intorno.
 - **Accesso** — schermata "Chi sei?" con i 5 nomi di `SCALETTA_CONFIG.members` + PIN di 6 cifre.
-  Sotto: Firebase Auth email/password con email `nome@bandlist` (vedi `emailFor`) e PIN come password.
+  Sotto: Firebase Auth email/password con email `nome@bandlist.app` (vedi `emailFor`) e PIN come password.
   La registrazione libera va disattivata in Firebase, così entrano solo i 5 utenti creati a mano.
 
 ## Struttura del file

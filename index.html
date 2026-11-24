@@ -35,7 +35,7 @@ window.SCALETTA_CONFIG = {
     messagingSenderId: "332207797509",
     appId: "1:332207797509:web:d6131a5b769eaa95f8b36c"
   },
-  emailDomain: "bandlist",
+  emailDomain: "bandlist.app",
   members: ["Goli", "Cale", "G Spot", "Rollo", "Aema"],
 
   // Canzoni di partenza: entrano nel database una volta sola, al primo accesso,
@@ -581,7 +581,7 @@ details.box > summary::-webkit-details-marker { display: none; }
   const safeUrl = (u) => (typeof u === "string" && /^https:\/\//i.test(u.trim()) ? u.trim() : "");
   const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   const slug = (s) => norm(s).replace(/ /g, ".");
-  const emailFor = (name) => `${slug(name)}@${CFG.emailDomain || "bandlist"}`;
+  const emailFor = (name) => `${slug(name)}@${CFG.emailDomain || "bandlist.app"}`;
   const sameSong = (a, b) => !!a && !!b && ((a.spotifyId && a.spotifyId === b.spotifyId) || (norm(a.title) === norm(b.title) && norm(a.artist) === norm(b.artist)));
   const strip = (d) => { const o = {}; for (const k in d) if (k !== "id" && d[k] !== undefined) o[k] = d[k]; return o; };
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
