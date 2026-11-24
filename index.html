@@ -2100,7 +2100,7 @@ details.box > summary::-webkit-details-marker { display: none; }
       const link = inviteLink(await inviteCode(fresh));
       out.textContent = link;
       $("#invite-new").hidden = false;
-      const msg = "Ciao! Unisciti alla mia band su Bandlist!";
+      const msg = "Ciao! Unisciti a me su Bandlist!";
       if (navigator.share && matchMedia("(pointer: coarse)").matches) {
         try { await navigator.share({ title: "Bandlist", text: msg, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; }
       }
