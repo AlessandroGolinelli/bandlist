@@ -13,6 +13,7 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   con le meno ripassate in cima. La cover del mese è sempre aggiunta in fondo.
   Si può anche **fare la lista a mano** ("✎ Faccio io la lista", menu "+ Aggiungi una canzone", × per togliere).
   Su ogni canzone: "Segna ripassata" e livello **Poco / Medio / Bene**, ↻ per cambiarla a caso.
+  Sotto la lista il pulsantone verde "✓ Ripassate tutte" (con Annulla; sparisce quando sono tutte fatte).
 - **Repertorio** — canzoni che la band sa. Conteggio ripassi = sessioni con `done[id] === true` + `adjust`
   (correzione manuale con −/+). Modifica con ✎. Flag `own` = pezzo della band ("Nostra").
 - **Proposte** — pezzi da imparare. Voto **+1 / −1, uno a testa** (ripremere toglie il voto).
@@ -52,6 +53,12 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   percorsi corti (`songs/x`) e `bandStore` aggiunge il prefisso (tranne `tunings/`). Impostazioni: "Copia il link
   d'invito" (`?invito=CODICE`, salvato in localStorage `bandlist-invite` finché non si entra), "Crea un link nuovo"
   (il vecchio smette di valere), elenco membri, passaggio tra le proprie band, "+ Crea un'altra band".
+- **Membri e account** — in Impostazioni l'elenco dei membri ha "Togli" (con Annulla: toglie anche i voti; i voti di chi
+  non è più nella band non contano in `voteTally`). "Esci da questa band" (`leaveBand`, con conferma: l'ultimo che esce
+  cancella la band e tutti i suoi dati). "Cancella il mio account" (`deleteAccountData` + `user.delete()`: Firebase vuole
+  un accesso recente, quindi con Google riapre il popup, con password chiede di uscire e rientrare). Le canzoni aggiunte
+  restano alla band. Chi ha creato una band può aggiungersi da solo solo nei primi 10 minuti (regole).
+- **Privacy** — `privacy.html` (pagina a parte, linkata da accesso e Impostazioni). Se si salvano dati nuovi, aggiornala.
 - **Trasloco della band storica** — i suoi dati erano in cima al database. Al primo accesso col PIN, `legacyJoin` /
   `migrateLegacy` li **copiano** (senza cancellarli) in `bands/fondatori` (`SCALETTA_CONFIG.legacyBand`), con
   membri e voti di tutti. La copia vecchia resta in sola lettura.

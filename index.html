@@ -151,6 +151,11 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .invite-note { background: var(--pink-soft); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; }
 .band-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .invite-out { font-size: 12.5px; color: var(--muted); word-break: break-all; }
+.member-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.member-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14.5px; min-height: 34px; }
+.account-box { display: flex; flex-direction: column; gap: 10px; border-top: 1.5px solid var(--line); padding-top: 14px; }
+.member-list .btn.quiet, .btn.quiet.danger { color: var(--red); }
+.legal { font-size: 12.5px; color: var(--muted); text-align: center; }
 
 /* ---------- Header ---------- */
 .top { display: flex; flex-direction: column; gap: 14px; }
@@ -341,6 +346,7 @@ details.box > summary::-webkit-details-marker { display: none; }
 .tape.r { right: -14px; transform: rotate(30deg); }
 .paper-head { font-family: var(--f-marker); font-size: 19px; text-align: center; letter-spacing: .02em; line-height: 1.25; }
 .paper-head small { display: block; font-size: 13.5px; opacity: .6; }
+.all-done { display: flex; width: 100%; margin-top: 14px; }
 .progress { font-size: 12.5px; text-align: center; margin-top: 6px; color: var(--green); font-weight: 650; }
 .paper-sub { font-family: var(--f-marker); font-size: 15px; opacity: .6; margin-top: 18px; }
 .setlist { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; }
@@ -497,6 +503,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     </form>
     <button type="button" class="btn quiet small" id="legacy-back">← Entra con Google o email</button>
   </div>
+  <p class="legal">Entrando accetti come trattiamo i tuoi dati: <a href="privacy.html">privacy</a>.</p>
 </main>
 
 <!-- ================= LA TUA BAND (dopo l'accesso) ================= -->
@@ -521,6 +528,7 @@ details.box > summary::-webkit-details-marker { display: none; }
       Se invece una band c'è già, chiedi a loro il link e aprilo.</p>
   </form>
   <div class="row"><button type="button" class="btn ghost small" id="ob-back" hidden>← Torna alla band</button><button type="button" class="btn quiet small" id="ob-logout">Esci</button></div>
+  <p class="legal"><a href="privacy.html">Privacy: quali dati salviamo</a></p>
 </main>
 
 <!-- ================= APP ================= -->
@@ -548,7 +556,7 @@ details.box > summary::-webkit-details-marker { display: none; }
         <div class="row"><button type="button" class="btn" id="invite-btn">Copia il link d'invito</button>
           <button type="button" class="btn quiet small" id="invite-new" hidden>Crea un link nuovo</button></div>
         <p class="invite-out" id="invite-out"></p>
-        <p class="small-note" id="band-members"></p>
+        <div id="band-members"></div>
         <div id="my-bands"></div>
         <div class="row"><button type="button" class="btn ghost small" id="new-band-btn">+ Crea un'altra band</button>
           <button type="button" class="btn ghost small" id="link-google" hidden>Collega il mio Google</button></div>
@@ -561,7 +569,12 @@ details.box > summary::-webkit-details-marker { display: none; }
       <p><strong>Come funziona l'estrazione.</strong> Il pulsantone pesca a caso dal repertorio, ma dà più probabilità alle canzoni ripassate poche volte, a quelle segnate “Poco” e a quelle che non toccate da tempo. In cima alla lista mette quelle ripassate meno. La cover del mese si aggiunge sempre in fondo.</p>
       <p><strong>Ho sbagliato qualcosa.</strong> Ogni modifica mostra in basso il tasto “Annulla” per qualche secondo. La cover del mese si può sempre rimettere tra le proposte.</p>
       <p><strong>Sul telefono.</strong> Aprite il link e scegliete “Aggiungi a schermata Home”: Bandlist diventa un'icona come un'app.</p>
-      <div class="row"><button type="button" class="btn ghost" id="logout-btn">Esci</button><span class="small-note" id="logout-note"></span></div>
+      <div class="account-box">
+        <p><strong>Il tuo account.</strong> <a href="privacy.html" target="_blank" rel="noopener">Quali dati salviamo (privacy)</a></p>
+        <div class="row"><button type="button" class="btn ghost" id="logout-btn">Esci</button><span class="small-note" id="logout-note"></span></div>
+        <div class="row"><button type="button" class="btn quiet small danger" id="leave-band">Esci da questa band</button>
+          <button type="button" class="btn quiet small danger" id="delete-account">Cancella il mio account</button></div>
+      </div>
     </section>
     <div class="cover" id="cover">
       <span class="disc" aria-hidden="true"></span>
@@ -987,7 +1000,9 @@ details.box > summary::-webkit-details-marker { display: none; }
   const orderLeastFirst = (ids) => { const st = stats(); return ids.slice().sort((a, b) => (st.reviews[a] || 0) - (st.reviews[b] || 0) || ((songById(a) || {}).level || 0) - ((songById(b) || {}).level || 0)); };
   function voteTally(wishId) {
     let up = 0, down = 0, mine = 0; const yes = [], no = [];
+    const known = Object.keys(S.members).length > 0;
     Object.entries(S.votes).forEach(([uid, p]) => {
+      if (known && !S.members[uid]) return; // removed from the band
       const v = p && p[wishId];
       if (v === 1) { up++; yes.push(uid); } else if (v === -1) { down++; no.push(uid); }
       if (uid === S.me && (v === 1 || v === -1)) mine = v;
@@ -1145,6 +1160,7 @@ details.box > summary::-webkit-details-marker { display: none; }
       <div class="paper-head">Prova di oggi<small>${esc(fmtDate(today()))}</small></div>
       ${ids.length ? `<div class="progress">${nDone === ids.length ? "Tutte ripassate. Bravi!" : `${nDone} di ${ids.length} ripassate`}</div>` : ""}
       ${ids.length ? `<ol class="setlist">${items}</ol>` : `<div class="paper-empty">Lista vuota.<br>Scegliete le canzoni qui sotto.</div>`}
+      ${ids.length && nDone < ids.length ? `<button type="button" class="btn big green all-done" data-act="all-done">✓ Ripassate tutte</button>` : ""}
       ${picker}${learn}
       <div class="paper-note">${se.manual ? "Lista fatta a mano." : "In cima ci sono quelle ripassate meno."}</div></div>`;
   }
@@ -1728,6 +1744,12 @@ details.box > summary::-webkit-details-marker { display: none; }
     } else if (act === "done" && se) {
       const on = !((se.done || {})[id] === true);
       await write(() => S.db.doc("sessions/" + se.id).update({ done: { [id]: on } }));
+    } else if (act === "all-done" && se) {
+      const ids = (se.songIds || []).filter((x) => songById(x)), was = se.done || {};
+      const on = {}, back = {};
+      ids.forEach((x) => { on[x] = true; back[x] = was[x] === true; });
+      await write(() => S.db.doc("sessions/" + se.id).update({ done: on }), "Tutte segnate come ripassate",
+        () => S.db.doc("sessions/" + se.id).update({ done: back }));
     } else if (act === "cover-done" && se) {
       await write(() => S.db.doc("sessions/" + se.id).update({ coverDone: !se.coverDone }));
     } else if (act === "level") {
@@ -2096,8 +2118,10 @@ details.box > summary::-webkit-details-marker { display: none; }
   }
   function renderBandBox() {
     if (!S.db || !account) return;
-    const names = Object.values(S.members).map((m) => m && m.name).filter(Boolean);
-    $("#band-members").textContent = names.length ? "Nella band: " + names.join(", ") : "";
+    const ids = Object.keys(S.members).filter((id) => S.members[id] && S.members[id].name)
+      .sort((a, b) => String(S.members[a].name).localeCompare(String(S.members[b].name), "it"));
+    $("#band-members").innerHTML = ids.length ? `<p class="small-note" style="margin-bottom:4px">Nella band (${ids.length}):</p><ul class="member-list">${ids.map((id) =>
+      `<li><span>${esc(S.members[id].name)}${id === S.me ? " <span class=\"small-note\">(tu)</span>" : ""}</span>${id === S.me ? "" : `<button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button>`}</li>`).join("")}</ul>` : "";
     const bands = Object.entries((account.user && account.user.bands) || {});
     $("#my-bands").innerHTML = bands.length > 1 ? `<p class="small-note" style="margin-bottom:6px">Le tue band (tocca per passare a un'altra):</p><div class="band-list">${bands.map(([id, n]) =>
       `<button type="button" class="btn small ${id === S.band ? "" : "ghost"}" data-band="${esc(id)}" ${id === S.band ? 'aria-current="true"' : ""}>${esc(n)}</button>`).join("")}</div>` : "";
@@ -2108,6 +2132,61 @@ details.box > summary::-webkit-details-marker { display: none; }
     const b = e.target.closest("[data-band]");
     if (b && b.dataset.band !== S.band) openBand(b.dataset.band);
   });
+  // Remove someone from the band (with Annulla). Their votes go too; the songs they added stay.
+  $("#band-members").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-kick]"); if (!b || !S.db) return;
+    const uid = b.dataset.kick, before = S.members[uid], picks = S.votes[uid], db = S.db;
+    if (!before || uid === S.me) return;
+    write(async () => { await db.doc("members/" + uid).delete(); await db.doc("votes/" + uid).delete().catch(() => {}); },
+      `${before.name} non è più nella band. Se ha ancora il link d'invito, creane uno nuovo.`,
+      async () => { await db.doc("members/" + uid).set(before); if (picks) await db.doc("votes/" + uid).set({ picks }); });
+  });
+
+  // Leave a band. The last one out deletes the band and everything in it.
+  async function leaveBand(b, uid) {
+    const own = await base.doc(`bands/${b}/members/${uid}`).get().catch(() => null);
+    if (!own || !own.exists) return;
+    const mem = await base.collection(`bands/${b}/members`).get();
+    if (mem.docs.every((d) => d.id === uid)) {
+      const inv = await base.doc(`bands/${b}/meta/invite`).get().catch(() => null);
+      if (inv && inv.exists && inv.data().code) await base.doc("invites/" + inv.data().code).delete().catch(() => {});
+      for (const c of ["songs", "wishlist", "sessions", "covers", "meta", "votes"]) {
+        const s = await base.collection(`bands/${b}/${c}`).get();
+        await Promise.all(s.docs.map((d) => base.doc(`bands/${b}/${c}/${d.id}`).delete()));
+      }
+      await base.doc("bands/" + b).delete().catch(() => {});
+    } else await base.doc(`bands/${b}/votes/${uid}`).delete().catch(() => {});
+    await base.doc(`bands/${b}/members/${uid}`).delete();
+  }
+  $("#leave-band").addEventListener("click", async () => {
+    if (!S.band || !account) return;
+    const b = S.band, name = (S.settings && S.settings.bandName) || bandLabel(b);
+    const alone = !Object.keys(S.members).some((id) => id !== account.uid);
+    if (!confirm(alone ? `Sei l'ultimo rimasto in “${name}”: uscendo, la band e tutte le sue canzoni vengono cancellate per sempre. Vuoi uscire?`
+      : `Vuoi uscire da “${name}”? Per rientrare ti servirà un nuovo link d'invito.`)) return;
+    stopApp(); showOnboard("wait");
+    try {
+      await leaveBand(b, account.uid);
+      const bands = { ...((account.user || {}).bands || {}) }; delete bands[b];
+      await saveUser({ band: Object.keys(bands)[0] || "", bands });
+      toast(`Sei uscito da “${name}”`);
+    } catch { toast("Non sono riuscito a uscire dalla band. Riprova."); }
+    afterLogin(account);
+  });
+
+  // Delete everything about me: memberships (and bands where I'm the last one), tunings, profile.
+  const DELETE_ASK = "Vuoi cancellare il tuo account? Spariscono il tuo nome, i tuoi voti, le tue accordature e il tuo accesso. "
+    + "Le canzoni che hai aggiunto restano alla band. Le band dove sei l'ultimo rimasto vengono cancellate. Non si può annullare.";
+  async function deleteAccountData() {
+    const uid = account.uid;
+    const ids = new Set([S.band, ...Object.keys((account.user || {}).bands || {})].filter(Boolean));
+    stopApp(); showOnboard("wait");
+    for (const b of ids) await leaveBand(b, uid);
+    await base.doc("tunings/" + uid).delete().catch(() => {});
+    for (const c of ["members", "votes"]) await base.doc(`${c}/${uid}`).delete().catch(() => {}); // the original band's old copy
+    await base.doc("users/" + uid).delete();
+    clearInvite();
+  }
   $("#new-band-btn").addEventListener("click", () => { account.backTo = S.band; stopApp(); showOnboard("create"); });
 
   /* ---------- login: demo, PIN (original band), Google, email ---------- */
@@ -2140,6 +2219,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     "auth/admin-restricted-operation": "Le registrazioni non sono ancora aperte.",
     "auth/credential-already-in-use": "Questo account Google è già usato da un altro utente.",
     "auth/account-exists-with-different-credential": "Questa email ha già un account con password: entra con email e password.",
+    "auth/user-mismatch": "Hai scelto un altro account Google: usa quello con cui sei entrato.",
   })[c] || "Email o password sbagliate.";
 
   async function demoLogout() { try { localStorage.removeItem("scaletta-demo-user"); } catch {} stopApp(); account = null; showLogin(); }
@@ -2149,6 +2229,11 @@ details.box > summary::-webkit-details-marker { display: none; }
     let saved = null; try { saved = localStorage.getItem("scaletta-demo-user"); } catch {}
     $("#logout-btn").addEventListener("click", demoLogout);
     $("#ob-logout").addEventListener("click", demoLogout);
+    $("#delete-account").addEventListener("click", async () => {
+      if (!account || !confirm(DELETE_ASK)) return;
+      try { await deleteAccountData(); toast("Account cancellato. Ciao!"); } catch { toast("Qualcosa non è andato. Riprova."); }
+      demoLogout();
+    });
     if (saved && members.includes(saved)) afterLogin({ uid: "demo-" + slug(saved), name: saved, legacy: true }); else showLogin();
   } else if (!window.firebase) {
     showLogin("Non riesco a collegarmi. Controlla la connessione e ricarica la pagina.");
@@ -2212,6 +2297,19 @@ details.box > summary::-webkit-details-marker { display: none; }
     });
     $("#logout-btn").addEventListener("click", () => auth.signOut());
     $("#ob-logout").addEventListener("click", () => auth.signOut());
+    $("#delete-account").addEventListener("click", async () => {
+      const u = auth.currentUser; if (!u || !account || !confirm(DELETE_ASK)) return;
+      // Firebase only deletes accounts that logged in a few minutes ago: check first, so nothing is half done.
+      try {
+        const t = await u.getIdTokenResult();
+        if (Date.now() - new Date(t.authTime).getTime() > 4 * 60 * 1000) {
+          if (!u.providerData.some((p) => p.providerId === "google.com")) { toast("Per sicurezza esci e rientra, poi premi subito “Cancella il mio account”."); return; }
+          await u.reauthenticateWithPopup(google());
+        }
+      } catch (err) { if (err && err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") toast(authMsg(err.code)); return; }
+      try { await deleteAccountData(); await u.delete(); toast("Account cancellato. Ciao!"); }
+      catch { toast("Qualcosa non è andato: rientra e riprova."); auth.signOut(); }
+    });
     auth.onAuthStateChanged((u) => {
       if (u) {
         if (account && account.uid === u.uid) return;

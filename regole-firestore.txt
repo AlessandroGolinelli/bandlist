@@ -26,23 +26,28 @@ service cloud.firestore {
       allow get: if signedIn();
       allow create: if signedIn() && request.resource.data.createdBy == me();
       allow update: if isMember(b);
+      allow delete: if isMember(b);  // l'ultimo che esce cancella la band
 
-      // Si entra in una band se la si è creata o con un codice d'invito valido.
+      // Si entra in una band se la si è appena creata (entro 10 minuti) o con un codice d'invito valido.
+      // Chiunque nella band può togliere qualcuno; chi esce o cancella l'account toglie sé stesso.
       match /members/{uid} {
         allow read: if isMember(b) || (signedIn() && me() == uid);
         allow create: if signedIn() && (
           isMember(b)
-          || (me() == uid && get(/databases/$(database)/documents/bands/$(b)).data.createdBy == me())
+          || (me() == uid && get(/databases/$(database)/documents/bands/$(b)).data.createdBy == me()
+              && request.time.toMillis() < get(/databases/$(database)/documents/bands/$(b)).data.createdAt + 600000)
           || (me() == uid && get(/databases/$(database)/documents/invites/$(request.resource.data.code)).data.band == b)
         );
         allow update: if isMember(b) && me() == uid;
         allow delete: if isMember(b);
       }
 
-      // Voti: un voto a testa, ognuno cambia solo i propri.
+      // Voti: un voto a testa, ognuno cambia solo i propri. Quelli di chi non è più nella band si possono cancellare.
       match /votes/{uid} {
         allow read, create: if isMember(b);
-        allow update, delete: if isMember(b) && me() == uid;
+        allow update: if isMember(b) && me() == uid;
+        allow delete: if isMember(b) && (me() == uid
+          || !exists(/databases/$(database)/documents/bands/$(b)/members/$(uid)));
       }
 
       match /{coll}/{id} {
@@ -55,6 +60,8 @@ service cloud.firestore {
     match /{coll}/{id} {
       allow read: if signedIn() && coll in ['songs', 'wishlist', 'sessions', 'covers', 'meta', 'members', 'votes']
         && (!exists(/databases/$(database)/documents/bands/fondatori) || isMember('fondatori'));
+      // Chi cancella l'account toglie anche il suo nome e i suoi voti da qui.
+      allow delete: if signedIn() && me() == id && coll in ['members', 'votes'];
     }
   }
 }
