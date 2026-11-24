@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232446F0'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23fff'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%23F6B800'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Inter:wght@400;500;600;700&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,500..900;1,62..125,500..900&family=Inter:wght@400;500;600;700&family=Permanent+Marker&display=swap">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -117,7 +117,7 @@ body.has-player.player-apple { --player-h: 191px; }
 img { max-width: 100%; }
 .wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
 h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; line-height: 1.02; }
-h1 { font-size: clamp(42px, 9vw, 68px); font-weight: 900; font-stretch: 66%; text-transform: uppercase; letter-spacing: -.01em; }
+h1 { font-size: clamp(42px, 9vw, 68px); font-weight: 900; font-style: italic; font-stretch: 66%; text-transform: uppercase; letter-spacing: -.01em; }
 h2 { font-size: 30px; font-weight: 850; font-stretch: 72%; text-transform: uppercase; }
 h3 { font-size: 14px; font-weight: 750; font-stretch: 90%; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
 p { margin: 0; }
@@ -148,7 +148,7 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .brand .name { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .brand .band { color: var(--pink); }
 .brand .right { display: flex; align-items: center; gap: 10px; }
-.title-dots { display: inline-flex; gap: 5px; margin-left: 6px; vertical-align: middle; }
+.title-dots { display: inline-grid; grid-template-columns: 10px 10px; gap: 4px; margin-left: 10px; vertical-align: middle; }
 .title-dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
 .demo { background: var(--yellow-soft); border: 1.5px dashed var(--yellow); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; }
 
@@ -454,7 +454,7 @@ details.box > summary::-webkit-details-marker { display: none; }
 <main class="login" id="login" hidden>
   <div class="name">
     <span class="eyebrow" style="color:var(--pink)">Solo per la band</span>
-    <h1>Bandlist<span class="title-dots" aria-hidden="true"><i style="background:var(--blue)"></i><i style="background:var(--green)"></i><i style="background:var(--pink)"></i><i style="background:var(--yellow)"></i></span></h1>
+    <h1>Bandlist<span class="title-dots" aria-hidden="true"><i style="background:var(--blue)"></i><i style="background:var(--green)"></i><i style="background:var(--pink)"></i><i style="background:var(--violet)"></i></span></h1>
   </div>
   <p class="lead" id="login-lead">Chi sei? Tocca il tuo nome e inserisci il tuo PIN.</p>
   <div class="names" id="names"></div>
@@ -475,7 +475,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     <div class="brand">
       <div class="name">
         <span class="eyebrow band" id="band-line">La band</span>
-        <h1>Bandlist<span class="title-dots" aria-hidden="true"><i style="background:var(--blue)"></i><i style="background:var(--green)"></i><i style="background:var(--pink)"></i><i style="background:var(--yellow)"></i></span></h1>
+        <h1>Bandlist<span class="title-dots" aria-hidden="true"><i style="background:var(--blue)"></i><i style="background:var(--green)"></i><i style="background:var(--pink)"></i><i style="background:var(--violet)"></i></span></h1>
       </div>
       <div class="right">
         <span class="eyebrow" id="who-line"></span>
