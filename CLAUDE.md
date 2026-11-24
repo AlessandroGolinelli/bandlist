@@ -21,7 +21,7 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
 - **Annulla** — ogni azione importante mostra un toast con "Annulla" (funzione inversa passata a `write()`).
   Mantieni questa regola per ogni nuova azione distruttiva.
 - **Spotify** — incollando un link di condivisione: oEmbed (`open.spotify.com/oembed`) dà **titolo e copertina**
-  (non l'artista, che si scrive a mano); il player è l'iframe `open.spotify.com/embed/...` in una barra fissa
+  (non l'artista). Per l'artista l'app cerca il titolo su Apple Music (`itunes.apple.com/search`, CORS aperto) e mostra un menu a tendina (`#s-artist-pick`, `#w-artist-pick`, `artistCandidates`); il campo resta scrivibile a mano. La pagina embed di Spotify ha l'artista ma non ha CORS; il player è l'iframe `open.spotify.com/embed/...` in una barra fissa
   in basso (`#player`) che non si ricarica quando i dati cambiano. I campi link sono `type="text"` perché
   dal telefono il link arriva spesso con del testo intorno.
 - **Accesso** — schermata "Chi sei?" con i 5 nomi di `SCALETTA_CONFIG.members` + PIN di 6 cifre.

@@ -220,6 +220,8 @@ details.box > summary::-webkit-details-marker { display: none; }
 .sp-preview .txt strong { overflow-wrap: anywhere; }
 .sp-preview .txt span { font-size: 12.5px; color: var(--muted); }
 .sp-ok { color: var(--spotify); font-weight: 700; }
+.artist-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.artist-pick { width: 100%; font-size: 14px; padding: 8px 10px; border-color: color-mix(in srgb, var(--pink) 35%, var(--line)); }
 .sp-frame { width: 100%; border: 0; border-radius: 12px; height: 80px; display: block; }
 
 /* ---------- Pedal ---------- */
@@ -508,7 +510,8 @@ details.box > summary::-webkit-details-marker { display: none; }
         <div id="s-preview"></div>
         <div class="grid">
           <label class="f">Titolo<input type="text" id="s-title" required placeholder="Si compila da solo col link"></label>
-          <label class="f">Artista<input type="text" id="s-artist" placeholder="Es. Måneskin"></label>
+          <div class="artist-col"><label class="f">Artista<input type="text" id="s-artist" placeholder="Es. Måneskin"></label>
+          <select id="s-artist-pick" class="artist-pick" aria-label="Scegli l'artista" hidden></select></div>
           <label class="f">Tonalità (facoltativa)<input type="text" id="s-key" placeholder="Es. Mi minore"></label>
         </div>
         <div class="row between">
@@ -539,7 +542,8 @@ details.box > summary::-webkit-details-marker { display: none; }
       <div id="w-preview"></div>
       <div class="grid">
         <label class="f">Titolo<input type="text" id="w-title" required placeholder="Si compila da solo col link"></label>
-        <label class="f">Artista<input type="text" id="w-artist" placeholder="Facoltativo"></label>
+        <div class="artist-col"><label class="f">Artista<input type="text" id="w-artist" placeholder="Facoltativo"></label>
+          <select id="w-artist-pick" class="artist-pick" aria-label="Scegli l'artista" hidden></select></div>
       </div>
       <div class="row between">
         <a class="btn quiet small" id="w-search" href="https://open.spotify.com/search" target="_blank" rel="noopener">Non hai il link? Cerca su Spotify ↗</a>
@@ -611,6 +615,27 @@ details.box > summary::-webkit-details-marker { display: none; }
     if (!info.id && !info.title) return null;
     info.url = info.id ? `https://open.spotify.com/${info.type}/${info.id}` : url;
     return info;
+  }
+  /* Spotify doesn't give the artist, so we look the title up on Apple Music (iTunes Search, open to browsers)
+     and offer the artists found in a dropdown. The artist field stays free to type in. */
+  const baseTitle = (t) => norm(String(t || "").replace(/\s+[-–]\s+.*$/, "").replace(/\s*[([].*?[)\]]/g, ""));
+  async function artistCandidates(title) {
+    const q = baseTitle(title);
+    if (!q) return [];
+    try {
+      const r = await fetch("https://itunes.apple.com/search?entity=song&limit=25&country=it&term=" + encodeURIComponent(q));
+      if (!r.ok) return [];
+      const res = ((await r.json()).results || []).filter((x) => x.artistName);
+      const exact = res.filter((x) => baseTitle(x.trackName) === q);
+      const out = [], seen = new Set();
+      for (const x of (exact.length ? exact : res)) {
+        const key = norm(x.artistName);
+        if (seen.has(key)) continue;
+        seen.add(key); out.push({ artist: String(x.artistName).slice(0, 120), album: String(x.collectionName || "").slice(0, 80) });
+        if (out.length >= 6) break;
+      }
+      return out;
+    } catch { return []; }
   }
   const embedUrl = (x) => `https://open.spotify.com/embed/${x.spotifyType || "track"}/${x.spotifyId}?utm_source=generator`;
   const spotifyLink = (x) => (x.spotifyId ? `https://open.spotify.com/${x.spotifyType || "track"}/${x.spotifyId}` : safeUrl(x.spotifyUrl)) || "https://open.spotify.com/search/" + encodeURIComponent(`${x.title || ""} ${x.artist || ""}`.trim());
@@ -1067,7 +1092,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     const run = async () => {
       const v = inp.value.trim();
       const prev = $(previewSel);
-      if (!v) { S.linkInfo[k] = null; prev.innerHTML = ""; return; }
+      if (!v) { ++seq; S.linkInfo[k] = null; prev.innerHTML = ""; clearArtistPick(k); return; }
       const my = ++seq;
       prev.innerHTML = previewHtml(null, true);
       const info = await resolveSpotify(v);
@@ -1076,10 +1101,28 @@ details.box > summary::-webkit-details-marker { display: none; }
       prev.innerHTML = previewHtml(info || { error: true });
       const t = $(titleSel);
       if (info && info.title && (!t.value || t.dataset.auto === "1")) { t.value = info.title; t.dataset.auto = "1"; }
+      fillArtistPick(k, info && info.title, () => my === seq);
     };
     inp.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 350); });
     $(titleSel).addEventListener("input", (e) => { e.target.dataset.auto = "0"; });
   }
+  async function fillArtistPick(k, title, stillCurrent) {
+    const pick = $(`#${k}-artist-pick`);
+    pick.hidden = true; pick.innerHTML = "";
+    if (!title) return;
+    const list = await artistCandidates(title);
+    if (!stillCurrent() || !list.length) return;
+    pick.innerHTML = `<option value="">▾ Scegli l'artista (da Apple Music)</option>` +
+      list.map((c) => `<option value="${esc(c.artist)}">${esc(c.artist)}${c.album ? " — " + esc(c.album) : ""}</option>`).join("") +
+      `<option value="__manual">✎ Nessuno di questi: lo scrivo io</option>`;
+    pick.hidden = false;
+  }
+  function clearArtistPick(k) { const p = $(`#${k}-artist-pick`); p.hidden = true; p.innerHTML = ""; }
+  ["s", "w"].forEach((k) => $(`#${k}-artist-pick`).addEventListener("change", (e) => {
+    const inp = $(`#${k}-artist`), v = e.target.value;
+    if (v === "__manual") { inp.value = ""; inp.focus(); e.target.value = ""; return; }
+    if (v) inp.value = v;
+  }));
   wireLink("s", "#s-link", "#s-title", "#s-preview");
   wireLink("w", "#w-link", "#w-title", "#w-preview");
   $("#w-title").addEventListener("input", () => {
@@ -1209,7 +1252,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     const ref = S.db.collection("songs").doc();
     const ok = await write(() => ref.set(data), `“${title}” aggiunta`, () => ref.delete());
     if (btn) btn.disabled = false;
-    if (ok) { e.target.reset(); $("#s-title").dataset.auto = "0"; S.linkInfo.s = null; $("#s-preview").innerHTML = ""; $("#s-link").focus(); }
+    if (ok) { e.target.reset(); $("#s-title").dataset.auto = "0"; S.linkInfo.s = null; $("#s-preview").innerHTML = ""; clearArtistPick("s"); $("#s-link").focus(); }
   });
   $("#song-filter").addEventListener("input", (e) => { S.filter = e.target.value; renderSongs(); });
   $("#song-sort").addEventListener("change", (e) => { S.sort = e.target.value; try { localStorage.setItem("scaletta-sort", S.sort); } catch {} renderSongs(); });
@@ -1241,7 +1284,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     if (S.wishes.some((w) => sameSong(w, data))) { toast("È già tra le proposte: votatela!"); return; }
     const ref = S.db.collection("wishlist").doc();
     const ok = await write(() => ref.set({ ...data, addedBy: S.me, addedAt: Date.now() }), `“${title}” proposta`, () => ref.delete());
-    if (ok) { e.target.reset(); $("#w-title").dataset.auto = "0"; S.linkInfo.w = null; $("#w-preview").innerHTML = ""; }
+    if (ok) { e.target.reset(); $("#w-title").dataset.auto = "0"; S.linkInfo.w = null; $("#w-preview").innerHTML = ""; clearArtistPick("w"); }
   });
 
   /* ---------- buttons ---------- */
