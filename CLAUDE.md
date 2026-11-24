@@ -22,10 +22,13 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   "+ Aggiungi canzone" apre una ricerca nel repertorio; × toglie (con Annulla), "Svuota la scaletta" (con Annulla).
   Riordino tenendo premuto ☰ a destra e trascinando (pointer events, scorre da sola vicino ai bordi; `drag`,
   `dragUpdate`); con la tastiera frecce ↑ ↓ su ☰. Durante il trascinamento `renderConcert` non ridisegna.
-- **Accordature personali** — accanto a ogni canzone (Prova e Repertorio) due caselle unite senza freccia:
+  "⇩ Converti in PDF" (`#gig-pdf`): jsPDF 2.5.1 da cdnjs caricato al primo clic; il PDF ha solo numero, titolo
+  e accordatura di chi lo scarica (niente altro, a parte nome band e data in alto).
+- **Accordature personali** — si cambiano **solo in Repertorio**, con due caselle unite senza freccia:
   nota (E, D#, D, C#, C, B) e tipo (Standard, Drop + nomi propri aggiunti in Impostazioni › "Le mie accordature").
   Predefinito mostrato: D# Standard (non salvato finché non si cambia). Salvate in `tunings/{uid}`, le vede solo
-  chi le ha messe; in Concerto compaiono come etichetta viola.
+  chi le ha messe. Altrove solo in lettura (`tuningText`): in Prova in viola sotto l'artista, in Concerto
+  come etichetta viola accanto al titolo.
 - **Ascolta** — il quadratino verde ♪ apre la canzone su Spotify (app sul telefono): il suo link Spotify se c'è,
   altrimenti una ricerca "titolo artista" (`listenUrl`). Il player in basso non viene più usato dai pulsanti.
 - **Annulla** — ogni azione importante mostra un toast con "Annulla" (funzione inversa passata a `write()`).
