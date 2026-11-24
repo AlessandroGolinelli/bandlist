@@ -30,7 +30,7 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   Spotify), `spotifyId` = id del video/brano, `spotifyUrl` = link. Vedi `parseLink`, `resolveLink`, `linkKind`, `embedUrl`.
   La tendina degli artisti (Apple Music) compare quando c'è un titolo, anche scritto a mano.
 - **Accesso** — schermata "Chi sei?" con i 5 nomi di `SCALETTA_CONFIG.members` + PIN di 6 cifre.
-  Sotto: Firebase Auth email/password con email `nome@bandlist.app` (vedi `emailFor`) e PIN come password.
+  Sotto: Firebase Auth email/password con email `nome@bandlist.app` (vedi `emailFor`; eccezioni in `SCALETTA_CONFIG.logins`, es. G Spot → `gspot@bandlist.app`) e PIN come password.
   La registrazione libera va disattivata in Firebase, così entrano solo i 5 utenti creati a mano.
 
 ## Struttura del file
