@@ -85,6 +85,8 @@ window.SCALETTA_CONFIG = {
   --yellow-soft: #FFF5D4;
   --yellow-ink: #7A5A00;
   --orange: #F07A12;
+  --violet: #7A3FE0;
+  --violet-soft: #F0E9FF;
   --red: #E0352B;
   --red-soft: #FDE7E5;
   --spotify: #1DB954;
@@ -177,6 +179,33 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .tabs button[data-tab="prova"][aria-selected="true"] { background: var(--blue); }
 .tabs button[data-tab="repertorio"][aria-selected="true"] { background: var(--green); }
 .tabs button[data-tab="proposte"][aria-selected="true"] { background: var(--pink); }
+.tabs button[data-tab="concerto"][aria-selected="true"] { background: var(--violet); }
+
+/* ---------- Scaletta concerto ---------- */
+.gig { list-style: none; margin: 0; padding: 0; background: var(--bg); border: 1.5px solid var(--line); border-radius: 16px; }
+.gig > li { display: flex; align-items: center; gap: 12px; padding: 10px 8px 10px 14px; border-top: 1.5px solid var(--line); background: var(--bg); position: relative; }
+.gig > li:first-child { border-top: 0; border-radius: 15px 15px 0 0; }
+.gig > li:last-child { border-radius: 0 0 15px 15px; }
+.gig > li:only-child { border-radius: 15px; }
+.gig .num { font: 900 22px/1 var(--f-display); font-stretch: 72%; color: var(--violet); width: 26px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.gig .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gig .t { font-weight: 700; overflow-wrap: anywhere; }
+.gig .s { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.gig .chip.tun { background: var(--violet-soft); color: var(--violet); }
+.gig .x { border: 0; background: transparent; color: var(--muted); width: 34px; height: 40px; font-size: 18px; cursor: pointer; flex: none; border-radius: 8px; }
+.drag-handle { border: 0; background: transparent; color: var(--muted); width: 44px; height: 44px; font-size: 22px; line-height: 1; cursor: grab; flex: none; border-radius: 10px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.drag-handle:hover, .drag-handle:focus-visible { background: var(--violet-soft); color: var(--violet); }
+.gig.dragging > li { transition: transform .15s ease; }
+.gig.dragging > li.lifted { transition: none; z-index: 2; box-shadow: var(--shadow); border-radius: 12px; cursor: grabbing; }
+.gig.dragging > li.lifted .drag-handle { cursor: grabbing; color: var(--violet); }
+.gig-add { display: flex; flex-direction: column; gap: 10px; }
+.gig-results { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; border: 1.5px solid var(--line); border-radius: 12px; }
+.gig-results button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; border: 0; border-top: 1.5px solid var(--line); background: var(--bg); padding: 11px 14px; cursor: pointer; font: 15px var(--f-body); color: var(--ink); }
+.gig-results button:first-child { border-top: 0; }
+.gig-results button:hover { background: var(--violet-soft); }
+.gig-results button small { color: var(--muted); font-size: 13px; }
+.gig-results .none { padding: 14px; color: var(--muted); font-size: 14px; }
+.btn.violet { background: var(--violet); }
 
 .panel { display: flex; flex-direction: column; gap: 18px; }
 .panel-head { display: flex; flex-direction: column; gap: 6px; }
@@ -209,13 +238,18 @@ select { width: auto; padding-right: 30px; }
 .btn.big { padding: 15px 20px; font-size: 16px; border-radius: 12px; }
 .btn.small { padding: 7px 11px; font-size: 13px; border-radius: 9px; }
 .icon-btn { border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 34px; height: 34px; border-radius: 9px; cursor: pointer; font-size: 14px; display: inline-grid; place-items: center; flex: none; text-decoration: none; }
-.icon-btn.play { color: var(--spotify); border-color: color-mix(in srgb, var(--spotify) 45%, transparent); }
-.icon-btn.play.on { background: var(--spotify); color: #fff; border-color: var(--spotify); }
-.listen-btn { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 11px; border-radius: 9px; flex: none; white-space: nowrap; font: 650 13px/1 var(--f-body); color: #fff; background: var(--spotify); text-decoration: none; }
-.listen-btn:hover { filter: brightness(.95); }
-.tuning { display: inline-flex; align-items: center; gap: 4px; }
-.tuning select { font-size: 13px; font-weight: 650; padding: 6px 24px 6px 9px; border-radius: 999px; background-color: var(--bg); }
-.tuning select.unset { color: var(--muted); font-weight: 500; }
+.icon-btn.play { background: var(--spotify); color: #fff; border-color: var(--spotify); font-size: 16px; }
+.icon-btn.play:hover { filter: brightness(.95); }
+/* Tuning: two joined boxes like Poco/Medio/Bene, no arrow. Tapping one opens the phone's own picker. */
+.tuning { flex: none; display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--bg); }
+.tuning select { -webkit-appearance: none; appearance: none; background: transparent; border: 0; border-radius: 0; width: auto;
+  font: 650 12px/1 var(--f-body); color: var(--muted); padding: 7px 11px; cursor: pointer; text-align: center; text-align-last: center; }
+.tuning select + select { border-left: 1.5px solid var(--line); }
+.tuning.set select { color: var(--violet); }
+.tuning select:focus-visible { outline: 2px solid var(--violet); outline-offset: -2px; }
+.tune-names { display: flex; flex-wrap: wrap; gap: 6px; }
+.tune-names .chip { background: var(--violet-soft); color: var(--violet); padding: 4px 4px 4px 10px; }
+.tune-names .chip button { border: 0; background: transparent; color: inherit; font-size: 15px; line-height: 1; cursor: pointer; padding: 0 5px; }
 details.box > summary { cursor: pointer; font-weight: 650; list-style: none; display: flex; align-items: center; gap: 8px; }
 details.box > summary::before { content: "+"; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--soft); font-weight: 700; flex: none; }
 details.box[open] > summary::before { content: "−"; }
@@ -309,15 +343,14 @@ details.box > summary::-webkit-details-marker { display: none; }
 .setlist .artist { font-size: 12.5px; opacity: .6; }
 .setlist .side { display: flex; gap: 6px; flex: none; }
 .setlist .icon-btn { background: transparent; border-color: var(--paper-line); color: var(--paper-ink); }
-.setlist .icon-btn.play { color: var(--spotify); }
-.setlist .icon-btn.play.on { background: var(--spotify); color: #fff; }
+.setlist .icon-btn.play { background: var(--spotify); color: #fff; border-color: var(--spotify); }
 .ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 7px; }
 .tick {
   border: 1.5px solid color-mix(in srgb, var(--green) 55%, transparent); background: transparent; color: var(--green);
   font: 700 12.5px/1 var(--f-body); padding: 7px 11px; border-radius: 999px; cursor: pointer;
 }
 .tick.on { background: var(--green); color: #fff; border-color: var(--green); }
-.lvl { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--bg); }
+.lvl { flex: none; display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--bg); }
 .lvl button { border: 0; background: transparent; color: var(--muted); font: 650 12px/1 var(--f-body); padding: 7px 10px; cursor: pointer; }
 .lvl button + button { border-left: 1.5px solid var(--line); }
 .lvl button.on.l1 { background: var(--red); color: #fff; }
@@ -406,8 +439,9 @@ details.box > summary::-webkit-details-marker { display: none; }
 @media (max-width: 480px) {
   .paper { padding: 30px 14px 20px; }
   .setlist .title { font-size: 21px; }
-  .tabs button { font-size: 13.5px; letter-spacing: .01em; }
-  .tabs button .count { margin-left: 2px; }
+  .tabs { gap: 3px; padding: 4px; }
+  .tabs button { font-size: 12.5px; font-stretch: 74%; letter-spacing: 0; padding: 12px 2px; }
+  .tabs button .count { margin-left: 2px; font-size: 10px; }
   .cover .song { font-size: 26px; }
   .art { width: 42px; height: 42px; }
 }
@@ -454,6 +488,11 @@ details.box > summary::-webkit-details-marker { display: none; }
         <label class="f" style="flex:1 1 220px">Nome della band<input type="text" id="band-name" maxlength="60" placeholder="Es. I Rumori Molesti"></label>
         <button class="btn" type="submit" style="align-self:flex-end">Salva</button>
       </form>
+      <form id="tune-form" autocomplete="off" style="display:flex;flex-direction:column;gap:8px">
+        <label class="f">Le mie accordature (le vedi solo tu): oltre a Standard e Drop, aggiungi un nome tuo
+          <span class="row"><input type="text" id="tune-name" maxlength="24" placeholder="Es. Open G, DADGAD" style="flex:1 1 160px"><button class="btn violet" type="submit">Aggiungi</button></span></label>
+        <div class="tune-names" id="tune-names"></div>
+      </form>
       <p><strong>Come funziona l'estrazione.</strong> Il pulsantone pesca a caso dal repertorio, ma dà più probabilità alle canzoni ripassate poche volte, a quelle segnate “Poco” e a quelle che non toccate da tempo. In cima alla lista mette quelle ripassate meno. La cover del mese si aggiunge sempre in fondo.</p>
       <p><strong>Ho sbagliato qualcosa.</strong> Ogni modifica mostra in basso il tasto “Annulla” per qualche secondo. La cover del mese si può sempre rimettere tra le proposte.</p>
       <p><strong>Sul telefono.</strong> Aprite il link e scegliete “Aggiungi a schermata Home”: Bandlist diventa un'icona come un'app.</p>
@@ -469,6 +508,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     <button role="tab" data-tab="prova" aria-selected="true">Prova</button>
     <button role="tab" data-tab="repertorio" aria-selected="false">Repertorio<span class="count" id="c-songs"></span></button>
     <button role="tab" data-tab="proposte" aria-selected="false">Proposte<span class="count" id="c-wish"></span></button>
+    <button role="tab" data-tab="concerto" aria-selected="false">Concerto<span class="count" id="c-gig"></span></button>
   </nav>
 
   <div id="notice" class="notice" hidden></div>
@@ -566,6 +606,23 @@ details.box > summary::-webkit-details-marker { display: none; }
     <div id="wishes"></div>
     <h3>Cover dei mesi passati</h3>
     <div id="covers-past"></div>
+  </section>
+
+  <!-- SCALETTA CONCERTO -->
+  <section class="panel" data-panel="concerto" hidden>
+    <div class="panel-head">
+      <h2>Scaletta concerto</h2>
+      <p>Il borderò per il concerto. Aggiungete le canzoni dal repertorio e tenete premuto ☰ per spostarle su o giù.</p>
+    </div>
+    <div id="gig"></div>
+    <div class="gig-add">
+      <button type="button" class="btn violet" id="gig-add-btn" aria-expanded="false">+ Aggiungi canzone</button>
+      <div id="gig-search" hidden>
+        <input type="search" id="gig-query" placeholder="Cerca nel repertorio" aria-label="Cerca nel repertorio" autocomplete="off">
+        <div class="gig-results" id="gig-results" style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class="row between" id="gig-foot"></div>
   </section>
 </div>
 
@@ -771,10 +828,11 @@ details.box > summary::-webkit-details-marker { display: none; }
   }
 
   /* ========================================================= */
+  let drag = null; // the ☰ drag in the concert setlist, while a finger is down
   const S = {
     db: null, me: null, myName: "", canWrite: true,
-    songs: [], wishes: [], sessions: [], votes: {}, tunings: {}, covers: [], settings: null, members: {},
-    got: { songs: false, wishlist: false, sessions: false, votes: false, tunings: false, covers: false, settings: false, members: false },
+    songs: [], wishes: [], sessions: [], votes: {}, tunings: {}, tuneNames: [], concert: null, covers: [], settings: null, members: {},
+    got: { songs: false, wishlist: false, sessions: false, votes: false, tunings: false, concert: false, covers: false, settings: false, members: false },
     confirmed: new Set(), slow: false, unsubs: [],
     view: "prova", filter: "", sort: "todo", editing: null, pendingCount: null, busy: false,
     linkInfo: { s: null, w: null, e: null }, playing: null,
@@ -880,17 +938,28 @@ details.box > summary::-webkit-details-marker { display: none; }
     ? `https://open.spotify.com/${x.spotifyType || "track"}/${x.spotifyId}`
     : "https://open.spotify.com/search/" + encodeURIComponent(`${x.title || ""} ${x.artist || ""}`.trim());
   function playBtn(x) {
-    return `<a class="listen-btn" href="${esc(listenUrl(x))}" target="_blank" rel="noopener" title="Apri su Spotify" aria-label="Ascolta ${esc(x.title)} su Spotify">♪ Ascolta</a>`;
+    return `<a class="icon-btn play" href="${esc(listenUrl(x))}" target="_blank" rel="noopener" title="Ascolta su Spotify" aria-label="Ascolta ${esc(x.title)} su Spotify">♪</a>`;
   }
   // Each person's own tuning for a song, saved in tunings/{uid}: only they can read it.
-  const NOTES = ["E", "D#", "D", "C#", "C", "B"];
+  // Until someone picks, every song shows D# Standard. Extra names (besides Standard / Drop) are in Impostazioni.
+  const NOTES = ["E", "D#", "D", "C#", "C", "B"], DEF_NOTE = "D#", DEF_TYPE = "Standard";
+  const tuneTypes = () => ["Standard", "Drop", ...S.tuneNames.filter((n) => n !== "Standard" && n !== "Drop")];
   function tuningPick(id) {
-    const t = S.tunings[id] || {}, note = t.note || "", type = t.type || "Standard";
-    return `<span class="tuning" title="La tua accordatura (la vedi solo tu)">
-      <select class="${note ? "" : "unset"}" data-tun="note" data-id="${esc(id)}" aria-label="Accordatura: nota">
-        <option value="">Accordatura</option>${NOTES.map((n) => `<option${n === note ? " selected" : ""}>${n}</option>`).join("")}</select>
-      ${note ? `<select data-tun="type" data-id="${esc(id)}" aria-label="Accordatura: tipo">${["Standard", "Drop"].map((k) => `<option${k === type ? " selected" : ""}>${k}</option>`).join("")}</select>` : ""}
+    const t = S.tunings[id], note = (t && t.note) || DEF_NOTE, type = (t && t.type) || DEF_TYPE;
+    const types = tuneTypes(); if (!types.includes(type)) types.push(type); // a name since removed from Impostazioni
+    const opts = (list, cur) => list.map((v) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+    return `<span class="tuning${t ? " set" : ""}" title="La tua accordatura (la vedi solo tu)">
+      <select data-tun="note" data-id="${esc(id)}" aria-label="Accordatura: nota">${opts(NOTES, note)}</select><select data-tun="type" data-id="${esc(id)}" aria-label="Accordatura: tipo">${opts(types, type)}</select>
     </span>`;
+  }
+  function saveTunings(songs, names, msg, undo) {
+    S.tunings = songs; S.tuneNames = names; renderAll(); renderTuneNames();
+    return write(() => S.db.doc("tunings/" + S.me).set({ songs, custom: names, updatedAt: Date.now() }), msg, undo);
+  }
+  function renderTuneNames() {
+    $("#tune-names").innerHTML = S.tuneNames.length ? S.tuneNames.map((n) =>
+      `<span class="chip">${esc(n)}<button type="button" data-act="tune-name-del" data-name="${esc(n)}" aria-label="Togli ${esc(n)}">×</button></span>`).join("")
+      : `<span class="small-note">Per ora ci sono solo Standard e Drop.</span>`;
   }
   const artImg = (x) => x.art ? `<img class="art" src="${esc(x.art)}" alt="" loading="lazy">` : `<span class="art none" aria-hidden="true">♪</span>`;
 
@@ -917,7 +986,7 @@ details.box > summary::-webkit-details-marker { display: none; }
       acts = `<div class="acts">${playBtn(c)}
         ${c.learned
           ? `<button type="button" class="btn quiet small" data-act="cover-unlearn">Non ancora</button>`
-          : `<button type="button" class="btn yellow small" data-act="cover-learned">Imparata ✓</button>
+          : `<button type="button" class="btn soft-yellow small" data-act="cover-learned">Imparata</button>
              <button type="button" class="btn quiet small" data-act="cover-back">Rimetti tra le proposte</button>`}</div>`;
     } else {
       const prev = S.covers.find((x) => x.id === prevMonthKey() && x.title && !x.learned);
@@ -1120,6 +1189,101 @@ details.box > summary::-webkit-details-marker { display: none; }
   function findByKey(key) {
     return [...S.songs, ...S.wishes, ...S.covers].find((x) => playKey(x) === key);
   }
+  /* ---------- scaletta concerto (meta/concert: songIds in order) ---------- */
+  const gigIds = () => ((S.concert && S.concert.songIds) || []).filter((id) => songById(id));
+  const tuningText = (id) => { const t = S.tunings[id]; return t && t.note ? `${t.note} ${t.type || DEF_TYPE}` : ""; };
+  function renderConcert() {
+    const el = $("#gig");
+    $("#c-gig").textContent = gigIds().length || "";
+    if (drag) return; // redrawn when the finger is lifted
+    const wait = waitBox("concert", "Carico la scaletta…");
+    if (wait) { el.innerHTML = wait; $("#gig-foot").innerHTML = ""; return; }
+    const ids = gigIds();
+    const a = document.activeElement, focusId = a && el.contains(a) && a.classList.contains("drag-handle") ? a.dataset.id : null;
+    el.innerHTML = ids.length ? `<ol class="gig">${ids.map((id, i) => {
+      const s = songById(id), tun = tuningText(id);
+      return `<li data-id="${esc(id)}">
+        <span class="num">${i + 1}</span>
+        <div class="main"><span class="t">${esc(s.title)}</span>
+          <span class="s">${esc([artistOf(s), s.key].filter(Boolean).join(" · "))}${tun ? ` <span class="chip tun" title="La tua accordatura">${esc(tun)}</span>` : ""}</span></div>
+        <button type="button" class="x" data-act="gig-remove" data-id="${esc(id)}" title="Togli dalla scaletta" aria-label="Togli ${esc(s.title)} dalla scaletta">×</button>
+        <button type="button" class="drag-handle" data-id="${esc(id)}" title="Tieni premuto e trascina per spostare" aria-label="Sposta ${esc(s.title)} (frecce su e giù)">☰</button>
+      </li>`;
+    }).join("")}</ol>` : `<div class="list"><div class="empty">La scaletta è vuota.<br>Premete “+ Aggiungi canzone” qui sotto.</div></div>`;
+    $("#gig-foot").innerHTML = ids.length ? `<span class="muted">${plural(ids.length, "canzone", "canzoni")}</span>
+      <button type="button" class="btn quiet small" data-act="gig-clear" style="color:var(--red)">Svuota la scaletta</button>` : "";
+    if (!$("#gig-search").hidden) renderGigResults();
+    if (focusId) { const h = el.querySelector(`.drag-handle[data-id="${CSS.escape(focusId)}"]`); if (h) h.focus(); }
+  }
+  function renderGigResults() {
+    const q = norm($("#gig-query").value), inList = new Set(gigIds());
+    const found = S.songs.filter((s) => !inList.has(s.id) && (!q || norm(s.title + " " + (s.artist || "")).includes(q)))
+      .sort((a, b) => a.title.localeCompare(b.title, "it"));
+    $("#gig-results").innerHTML = found.length ? found.map((s) => `<button type="button" data-act="gig-add" data-id="${esc(s.id)}">
+      <span>${esc(s.title)}</span>${artistOf(s) ? `<small>${esc(artistOf(s))}</small>` : ""}</button>`).join("")
+      : `<div class="none">${S.songs.length && !q ? "Ci sono già tutte le canzoni del repertorio." : "Nessuna canzone trovata nel repertorio."}</div>`;
+  }
+  function saveGig(ids, msg, undo) {
+    S.concert = { ...(S.concert || {}), songIds: ids }; renderConcert();
+    return write(() => S.db.doc("meta/concert").set({ songIds: ids, updatedBy: S.me, updatedAt: Date.now() }), msg, undo);
+  }
+  $("#gig-add-btn").addEventListener("click", () => {
+    const box = $("#gig-search"), open = box.hidden;
+    box.hidden = !open; $("#gig-add-btn").setAttribute("aria-expanded", String(open));
+    $("#gig-add-btn").textContent = open ? "Chiudi" : "+ Aggiungi canzone";
+    $("#gig-add-btn").classList.toggle("violet", !open); $("#gig-add-btn").classList.toggle("ghost", open);
+    if (open) { $("#gig-query").value = ""; renderGigResults(); $("#gig-query").focus(); }
+  });
+  $("#gig-query").addEventListener("input", renderGigResults);
+
+  // Reorder: hold ☰ and drag (finger or mouse). Arrow keys on ☰ move by one.
+  function moveGig(from, to) {
+    const ids = gigIds(); if (to < 0 || to >= ids.length || from === to) return;
+    const [x] = ids.splice(from, 1); ids.splice(to, 0, x);
+    saveGig(ids);
+  }
+  document.addEventListener("pointerdown", (e) => {
+    const h = e.target.closest(".drag-handle"); if (!h || drag || (e.pointerType === "mouse" && e.button !== 0)) return;
+    const li = h.closest("li"), list = li.parentElement, items = [...list.children];
+    e.preventDefault();
+    try { h.setPointerCapture(e.pointerId); } catch {}
+    const from = items.indexOf(li), sy = window.scrollY;
+    drag = { h, li, list, items, from, to: from, y0: e.clientY + sy, y: e.clientY,
+      mids: items.map((x) => { const r = x.getBoundingClientRect(); return r.top + sy + r.height / 2; }), size: li.getBoundingClientRect().height, raf: 0 };
+    list.classList.add("dragging"); li.classList.add("lifted");
+    const tick = () => { if (!drag) return;
+      const edge = 80, bottom = window.innerHeight - edge - (document.body.classList.contains("has-player") ? 96 : 0);
+      if (drag.y < edge) window.scrollBy(0, -Math.ceil((edge - drag.y) / 6));
+      else if (drag.y > bottom) window.scrollBy(0, Math.ceil((drag.y - bottom) / 6));
+      dragUpdate(); drag.raf = requestAnimationFrame(tick); };
+    drag.raf = requestAnimationFrame(tick);
+  });
+  function dragUpdate() {
+    const d = drag, dy = d.y + window.scrollY - d.y0, center = d.mids[d.from] + dy;
+    d.li.style.transform = `translateY(${dy}px)`;
+    let to = d.from;
+    d.mids.forEach((m, j) => { if (j < d.from && center < m) to = Math.min(to, j); if (j > d.from && center > m) to = Math.max(to, j); });
+    d.to = to;
+    d.items.forEach((x, j) => { if (j === d.from) return;
+      x.style.transform = j > d.from && j <= to ? `translateY(${-d.size}px)` : j < d.from && j >= to ? `translateY(${d.size}px)` : ""; });
+  }
+  document.addEventListener("pointermove", (e) => { if (drag) { drag.y = e.clientY; e.preventDefault(); dragUpdate(); } }, { passive: false });
+  function dragEnd() {
+    if (!drag) return;
+    const { from, to, raf } = drag; cancelAnimationFrame(raf); drag = null;
+    if (from !== to) moveGig(from, to); else renderConcert();
+  }
+  document.addEventListener("pointerup", dragEnd);
+  document.addEventListener("pointercancel", dragEnd);
+  document.addEventListener("keydown", (e) => {
+    const h = e.target.closest && e.target.closest("#gig .drag-handle"); if (!h || drag) return;
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    const ids = gigIds(), i = ids.indexOf(h.dataset.id), to = i + (e.key === "ArrowUp" ? -1 : 1);
+    if (to < 0 || to >= ids.length) return;
+    moveGig(i, to);
+  });
+
   function setPlayer(key) {
     S.playing = key;
     const frame = $("#player-frame");
@@ -1139,11 +1303,11 @@ details.box > summary::-webkit-details-marker { display: none; }
 
   function renderAll() {
     renderHeader(); renderCover(); renderPedal(); renderSheet(); renderHistory();
-    renderLevels(); renderSongs(); renderWishes(); renderPastCovers();
+    renderLevels(); renderSongs(); renderWishes(); renderPastCovers(); renderConcert();
   }
 
   /* ---------- tabs & settings ---------- */
-  const VIEWS = ["prova", "repertorio", "proposte"];
+  const VIEWS = ["prova", "repertorio", "proposte", "concerto"];
   function show(view) {
     if (!VIEWS.includes(view)) view = "prova";
     S.view = view;
@@ -1237,6 +1401,14 @@ details.box > summary::-webkit-details-marker { display: none; }
     return write(() => S.db.doc("meta/settings").set(next), msg,
       msg ? () => (prev ? S.db.doc("meta/settings").set(prev) : S.db.doc("meta/settings").delete()) : null);
   }
+  $("#tune-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const n = $("#tune-name").value.trim().replace(/\s+/g, " ");
+    if (!n || !S.me) return;
+    if (tuneTypes().some((x) => x.toLowerCase() === n.toLowerCase())) { toast(`“${n}” c'è già.`); return; }
+    $("#tune-name").value = "";
+    await saveTunings(S.tunings, [...S.tuneNames, n], `Aggiunta “${n}”: ora la trovi accanto alla nota`);
+  });
   $("#band-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     await saveSettings({ bandName: $("#band-name").value.trim().slice(0, 60) }, "Nome salvato");
@@ -1403,6 +1575,24 @@ details.box > summary::-webkit-details-marker { display: none; }
       await write(() => S.db.doc("sessions/" + se.id).update({ songIds: ids }), `“${songById(gone).title}” tolta dalla lista di oggi`,
         () => S.db.doc("sessions/" + se.id).update({ songIds: old }));
     }
+    else if (act === "tune-name-del") {
+      const n = b.dataset.name, oldNames = S.tuneNames.slice(), songs = S.tunings;
+      await saveTunings(songs, oldNames.filter((x) => x !== n), `Tolta “${n}” (le canzoni che la usano la tengono)`,
+        () => S.db.doc("tunings/" + S.me).set({ songs, custom: oldNames, updatedAt: Date.now() }));
+    }
+    else if (act === "gig-add") {
+      const ids = gigIds(); if (ids.includes(id) || !songById(id)) return;
+      await saveGig([...ids, id], `“${songById(id).title}” aggiunta alla scaletta`);
+      $("#gig-query").focus();
+    }
+    else if (act === "gig-remove") {
+      const old = gigIds();
+      await saveGig(old.filter((x) => x !== id), `“${songById(id).title}” tolta dalla scaletta`, () => S.db.doc("meta/concert").set({ songIds: old, updatedBy: S.me, updatedAt: Date.now() }));
+    }
+    else if (act === "gig-clear") {
+      const old = gigIds();
+      await saveGig([], "Scaletta svuotata", () => S.db.doc("meta/concert").set({ songIds: old, updatedBy: S.me, updatedAt: Date.now() }));
+    }
     else if (act === "play") setPlayer(S.playing === b.dataset.key ? null : b.dataset.key);
     else if (act === "close-player") setPlayer(null);
     else if (act === "reroll" && se) {
@@ -1477,11 +1667,10 @@ details.box > summary::-webkit-details-marker { display: none; }
     const tun = e.target.dataset && e.target.dataset.tun;
     if (tun && S.me) {
       const id = e.target.dataset.id, songs = { ...S.tunings };
-      const cur = { note: "", type: "Standard", ...(songs[id] || {}) };
+      const cur = { note: DEF_NOTE, type: DEF_TYPE, ...(songs[id] || {}) };
       cur[tun] = e.target.value;
-      if (cur.note) songs[id] = cur; else delete songs[id];
-      S.tunings = songs; renderAll();
-      await write(() => S.db.doc("tunings/" + S.me).set({ songs, updatedAt: Date.now() }));
+      songs[id] = cur;
+      await saveTunings(songs, S.tuneNames);
       return;
     }
     if (e.target.id !== "add-song" || !e.target.value) return;
@@ -1553,7 +1742,8 @@ details.box > summary::-webkit-details-marker { display: none; }
     subscribe("wishlist", db.collection("wishlist"), (s) => { S.wishes = docs(s).filter((x) => x.title); });
     subscribe("sessions", db.collection("sessions"), (s) => { S.sessions = docs(s).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.id)); });
     subscribe("votes", db.collection("votes"), (s) => { const v = {}; s.docs.forEach((d) => { v[d.id] = (d.data() || {}).picks || {}; }); S.votes = v; });
-    subscribe("tunings", db.doc("tunings/" + uid), (s) => { S.tunings = (s.exists && (s.data() || {}).songs) || {}; });
+    subscribe("tunings", db.doc("tunings/" + uid), (s) => { const d = (s.exists && s.data()) || {}; S.tunings = d.songs || {}; S.tuneNames = Array.isArray(d.custom) ? d.custom : []; renderTuneNames(); });
+    subscribe("concert", db.doc("meta/concert"), (s) => { S.concert = s.exists ? s.data() : null; });
     subscribe("covers", db.collection("covers"), (s) => { S.covers = docs(s).filter((x) => /^\d{4}-\d{2}$/.test(x.id)); });
     subscribe("settings", db.doc("meta/settings"), (s) => { S.settings = s.exists ? s.data() : null; });
     subscribe("members", db.collection("members"), (s) => { const m = {}; s.docs.forEach((d) => { m[d.id] = d.data(); }); S.members = m; });
@@ -1562,7 +1752,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     S.unsubs.forEach((u) => { try { u(); } catch {} }); S.unsubs = [];
     clearTimeout(slowTimer);
     Object.keys(S.got).forEach((k) => { S.got[k] = false; }); S.confirmed.clear();
-    S.db = null; S.me = null; S.myName = ""; S.tunings = {};
+    S.db = null; S.me = null; S.myName = ""; S.tunings = {}; S.tuneNames = [];
     setPlayer(null);
   }
 

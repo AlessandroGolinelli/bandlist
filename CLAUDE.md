@@ -1,6 +1,6 @@
 # Bandlist — contesto per Claude Code
 
-App web della band di Alessandro per **prepararsi alle prove** (non per i concerti).
+App web della band di Alessandro per **prepararsi alle prove**, più la scaletta (borderò) per i concerti.
 Tutto è in un solo file, `index.html`: niente build, niente dipendenze da installare.
 Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: spiegagli le cose in modo semplice.
 
@@ -17,7 +17,17 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
 - **Proposte** — pezzi da imparare. Voto **+1 / −1, uno a testa** (ripremere toglie il voto).
   Azioni: ★ cover del mese, "La sappiamo già" (→ repertorio), Togli.
 - **Cover del mese** — un documento per mese in `covers/AAAA-MM`. Si può sempre rimettere tra le proposte,
-  segnare "Imparata ✓" (→ repertorio) e annullare. Se a inizio mese la precedente non è finita, si può tenere.
+  segnare "Imparata" (→ repertorio) e annullare. Se a inizio mese la precedente non è finita, si può tenere.
+- **Concerto** — scheda "Scaletta concerto": una sola scaletta condivisa in `meta/concert.songIds` (in ordine).
+  "+ Aggiungi canzone" apre una ricerca nel repertorio; × toglie (con Annulla), "Svuota la scaletta" (con Annulla).
+  Riordino tenendo premuto ☰ a destra e trascinando (pointer events, scorre da sola vicino ai bordi; `drag`,
+  `dragUpdate`); con la tastiera frecce ↑ ↓ su ☰. Durante il trascinamento `renderConcert` non ridisegna.
+- **Accordature personali** — accanto a ogni canzone (Prova e Repertorio) due caselle unite senza freccia:
+  nota (E, D#, D, C#, C, B) e tipo (Standard, Drop + nomi propri aggiunti in Impostazioni › "Le mie accordature").
+  Predefinito mostrato: D# Standard (non salvato finché non si cambia). Salvate in `tunings/{uid}`, le vede solo
+  chi le ha messe; in Concerto compaiono come etichetta viola.
+- **Ascolta** — il quadratino verde ♪ apre la canzone su Spotify (app sul telefono): il suo link Spotify se c'è,
+  altrimenti una ricerca "titolo artista" (`listenUrl`). Il player in basso non viene più usato dai pulsanti.
 - **Annulla** — ogni azione importante mostra un toast con "Annulla" (funzione inversa passata a `write()`).
   Mantieni questa regola per ogni nuova azione distruttiva.
 - **Spotify** — incollando un link di condivisione: oEmbed (`open.spotify.com/oembed`) dà **titolo e copertina**
@@ -56,7 +66,8 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
 | `sessions/{AAAA-MM-GG}` | `songIds[], done{songId: bool}, coverDone, manual, createdBy, createdAt` |
 | `covers/{AAAA-MM}` | dati del brano + `wishId, wish, setBy, learned, learnedSongId, carriedFrom` |
 | `meta/settings` | `count, bandName, seeded` |
-| `tunings/{uid}` | `songs: {songId: {note: E\|D#\|D\|C#\|C\|B, type: Standard\|Drop}}` — leggibile e scrivibile solo dal proprietario |
+| `meta/concert` | `songIds[]` (ordine della scaletta), `updatedBy, updatedAt` |
+| `tunings/{uid}` | `songs: {songId: {note: E\|D#\|D\|C#\|C\|B, type: Standard\|Drop\|nome proprio}}, custom: [nomi propri]` — leggibile e scrivibile solo dal proprietario |
 | `members/{uid}` | `name, lastSeen` — scrivibile solo dal proprietario |
 
 Le regole di sicurezza sono in `regole-firestore.txt`: se aggiungi una collezione, aggiungila anche lì.
@@ -64,7 +75,7 @@ Le regole di sicurezza sono in `regole-firestore.txt`: se aggiungi una collezion
 ## Aspetto
 
 Tema chiaro unico (sfondo bianco, voluto dall'utente), più colorato: blu = Prova, verde = Repertorio,
-rosa = Proposte, giallo = cover del mese. Font: Archivo (titoli), Inter (testo), Permanent Marker (foglio).
+rosa = Proposte, viola = Concerto, giallo = cover del mese. Font: Archivo (titoli), Inter (testo), Permanent Marker (foglio).
 Pezzi caratteristici: il pedale da chitarra con footswitch e LED, il foglio della scaletta con lo scotch.
 Deve funzionare bene sul telefono (390px) senza scorrimento orizzontale.
 
