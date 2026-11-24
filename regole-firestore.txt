@@ -9,6 +9,11 @@ service cloud.firestore {
       allow write: if signedIn() && request.auth.uid == uid;
     }
 
+    // Accordature personali: ognuno vede e modifica solo le proprie.
+    match /tunings/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
     // Ognuno può aggiornare solo il proprio nome.
     match /members/{uid} {
       allow read: if signedIn();

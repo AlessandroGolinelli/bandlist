@@ -211,6 +211,11 @@ select { width: auto; padding-right: 30px; }
 .icon-btn { border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 34px; height: 34px; border-radius: 9px; cursor: pointer; font-size: 14px; display: inline-grid; place-items: center; flex: none; text-decoration: none; }
 .icon-btn.play { color: var(--spotify); border-color: color-mix(in srgb, var(--spotify) 45%, transparent); }
 .icon-btn.play.on { background: var(--spotify); color: #fff; border-color: var(--spotify); }
+.listen-btn { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 11px; border-radius: 9px; flex: none; white-space: nowrap; font: 650 13px/1 var(--f-body); color: #fff; background: var(--spotify); text-decoration: none; }
+.listen-btn:hover { filter: brightness(.95); }
+.tuning { display: inline-flex; align-items: center; gap: 4px; }
+.tuning select { font-size: 13px; font-weight: 650; padding: 6px 24px 6px 9px; border-radius: 999px; background-color: var(--bg); }
+.tuning select.unset { color: var(--muted); font-weight: 500; }
 details.box > summary { cursor: pointer; font-weight: 650; list-style: none; display: flex; align-items: center; gap: 8px; }
 details.box > summary::before { content: "+"; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--soft); font-weight: 700; flex: none; }
 details.box[open] > summary::before { content: "−"; }
@@ -768,8 +773,8 @@ details.box > summary::-webkit-details-marker { display: none; }
   /* ========================================================= */
   const S = {
     db: null, me: null, myName: "", canWrite: true,
-    songs: [], wishes: [], sessions: [], votes: {}, covers: [], settings: null, members: {},
-    got: { songs: false, wishlist: false, sessions: false, votes: false, covers: false, settings: false, members: false },
+    songs: [], wishes: [], sessions: [], votes: {}, tunings: {}, covers: [], settings: null, members: {},
+    got: { songs: false, wishlist: false, sessions: false, votes: false, tunings: false, covers: false, settings: false, members: false },
     confirmed: new Set(), slow: false, unsubs: [],
     view: "prova", filter: "", sort: "todo", editing: null, pendingCount: null, busy: false,
     linkInfo: { s: null, w: null, e: null }, playing: null,
@@ -869,12 +874,23 @@ details.box > summary::-webkit-details-marker { display: none; }
   const lvlPills = (kind, id, level) => `<span class="lvl" role="group" aria-label="Quanto bene la sapete">${[1, 2, 3].map((l) =>
     `<button type="button" class="l${l}${level === l ? " on" : ""}" data-act="${kind}" data-id="${esc(id)}" data-l="${l}" aria-pressed="${level === l}">${LV[l]}</button>`).join("")}</span>`;
   const playKey = (x) => (x && x.spotifyId ? (x.spotifyType || "track") + ":" + x.spotifyId : "");
+  // Opens the song in Spotify (the app, on the phone): its own Spotify link if it has one,
+  // otherwise a Spotify search for "title artist" (also for songs linked to YouTube / Apple Music).
+  const listenUrl = (x) => (x.spotifyId && linkKind(x) === "spotify")
+    ? `https://open.spotify.com/${x.spotifyType || "track"}/${x.spotifyId}`
+    : "https://open.spotify.com/search/" + encodeURIComponent(`${x.title || ""} ${x.artist || ""}`.trim());
   function playBtn(x) {
-    if (x.spotifyId) {
-      const on = S.playing === playKey(x);
-      return `<button type="button" class="icon-btn play${on ? " on" : ""}" data-act="play" data-key="${esc(playKey(x))}" aria-pressed="${on}" title="${on ? "In ascolto" : "Ascolta qui"}" aria-label="Ascolta ${esc(x.title)}">▶</button>`;
-    }
-    return `<a class="icon-btn" href="${esc(spotifyLink(x))}" target="_blank" rel="noopener" title="Cerca su Spotify" aria-label="Cerca ${esc(x.title)} su Spotify">♪</a>`;
+    return `<a class="listen-btn" href="${esc(listenUrl(x))}" target="_blank" rel="noopener" title="Apri su Spotify" aria-label="Ascolta ${esc(x.title)} su Spotify">♪ Ascolta</a>`;
+  }
+  // Each person's own tuning for a song, saved in tunings/{uid}: only they can read it.
+  const NOTES = ["E", "D#", "D", "C#", "C", "B"];
+  function tuningPick(id) {
+    const t = S.tunings[id] || {}, note = t.note || "", type = t.type || "Standard";
+    return `<span class="tuning" title="La tua accordatura (la vedi solo tu)">
+      <select class="${note ? "" : "unset"}" data-tun="note" data-id="${esc(id)}" aria-label="Accordatura: nota">
+        <option value="">Accordatura</option>${NOTES.map((n) => `<option${n === note ? " selected" : ""}>${n}</option>`).join("")}</select>
+      ${note ? `<select data-tun="type" data-id="${esc(id)}" aria-label="Accordatura: tipo">${["Standard", "Drop"].map((k) => `<option${k === type ? " selected" : ""}>${k}</option>`).join("")}</select>` : ""}
+    </span>`;
   }
   const artImg = (x) => x.art ? `<img class="art" src="${esc(x.art)}" alt="" loading="lazy">` : `<span class="art none" aria-hidden="true">♪</span>`;
 
@@ -960,6 +976,7 @@ details.box > summary::-webkit-details-marker { display: none; }
           <div class="ctrl">
             <button type="button" class="tick${isDone ? " on" : ""}" data-act="done" data-id="${esc(id)}" aria-pressed="${isDone}">${isDone ? "✓ Ripassata" : "Segna ripassata"}</button>
             ${lvlPills("level", id, s.level)}
+            ${tuningPick(id)}
           </div></div>
         <div class="side">${playBtn(s)}
           ${!isDone ? `<button type="button" class="icon-btn" data-act="reroll" data-i="${i}" title="Cambia con un'altra a caso" aria-label="Cambia ${esc(s.title)}">↻</button>
@@ -1043,7 +1060,7 @@ details.box > summary::-webkit-details-marker { display: none; }
         <div class="main">
           <span class="t">${esc(s.title)}${s.own ? ' <span class="chip own">Nostra</span>' : ""}</span>
           <span class="s">${esc([s.artist, s.key].filter(Boolean).join(" · "))}${s.artist || s.key ? " · " : ""}${st.last[s.id] ? "ultima volta " + esc(ago(st.last[s.id])) : "mai ripassata"}</span>
-          <div class="tools">${lvlPills("level", s.id, s.level)}
+          <div class="tools">${lvlPills("level", s.id, s.level)}${tuningPick(s.id)}
             <span class="rev" title="Quante volte l'avete ripassata">
               <button type="button" data-act="adj" data-d="-1" data-id="${esc(s.id)}" aria-label="Un ripasso in meno" ${n ? "" : "disabled"}>−</button>
               <span>${n === 0 ? "0 ripassi" : plural(n, "ripasso", "ripassi")}</span>
@@ -1457,6 +1474,16 @@ details.box > summary::-webkit-details-marker { display: none; }
   });
 
   document.addEventListener("change", async (e) => {
+    const tun = e.target.dataset && e.target.dataset.tun;
+    if (tun && S.me) {
+      const id = e.target.dataset.id, songs = { ...S.tunings };
+      const cur = { note: "", type: "Standard", ...(songs[id] || {}) };
+      cur[tun] = e.target.value;
+      if (cur.note) songs[id] = cur; else delete songs[id];
+      S.tunings = songs; renderAll();
+      await write(() => S.db.doc("tunings/" + S.me).set({ songs, updatedAt: Date.now() }));
+      return;
+    }
     if (e.target.id !== "add-song" || !e.target.value) return;
     const se = sessionToday(), id = e.target.value; if (!se) return;
     const ids = (se.songIds || []).filter((x) => songById(x));
@@ -1526,6 +1553,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     subscribe("wishlist", db.collection("wishlist"), (s) => { S.wishes = docs(s).filter((x) => x.title); });
     subscribe("sessions", db.collection("sessions"), (s) => { S.sessions = docs(s).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.id)); });
     subscribe("votes", db.collection("votes"), (s) => { const v = {}; s.docs.forEach((d) => { v[d.id] = (d.data() || {}).picks || {}; }); S.votes = v; });
+    subscribe("tunings", db.doc("tunings/" + uid), (s) => { S.tunings = (s.exists && (s.data() || {}).songs) || {}; });
     subscribe("covers", db.collection("covers"), (s) => { S.covers = docs(s).filter((x) => /^\d{4}-\d{2}$/.test(x.id)); });
     subscribe("settings", db.doc("meta/settings"), (s) => { S.settings = s.exists ? s.data() : null; });
     subscribe("members", db.collection("members"), (s) => { const m = {}; s.docs.forEach((d) => { m[d.id] = d.data(); }); S.members = m; });
@@ -1534,7 +1562,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     S.unsubs.forEach((u) => { try { u(); } catch {} }); S.unsubs = [];
     clearTimeout(slowTimer);
     Object.keys(S.got).forEach((k) => { S.got[k] = false; }); S.confirmed.clear();
-    S.db = null; S.me = null; S.myName = "";
+    S.db = null; S.me = null; S.myName = ""; S.tunings = {};
     setPlayer(null);
   }
 

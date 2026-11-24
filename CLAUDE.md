@@ -56,6 +56,7 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
 | `sessions/{AAAA-MM-GG}` | `songIds[], done{songId: bool}, coverDone, manual, createdBy, createdAt` |
 | `covers/{AAAA-MM}` | dati del brano + `wishId, wish, setBy, learned, learnedSongId, carriedFrom` |
 | `meta/settings` | `count, bandName, seeded` |
+| `tunings/{uid}` | `songs: {songId: {note: E\|D#\|D\|C#\|C\|B, type: Standard\|Drop}}` — leggibile e scrivibile solo dal proprietario |
 | `members/{uid}` | `name, lastSeen` — scrivibile solo dal proprietario |
 
 Le regole di sicurezza sono in `regole-firestore.txt`: se aggiungi una collezione, aggiungila anche lì.
