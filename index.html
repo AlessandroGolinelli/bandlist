@@ -2078,11 +2078,11 @@ details.box > summary::-webkit-details-marker { display: none; }
       const link = inviteLink(await inviteCode(fresh));
       out.textContent = link;
       $("#invite-new").hidden = false;
-      const name = (S.settings && S.settings.bandName) || "la band";
+      const msg = "Ciao! Unisciti alla mia band su Bandlist!";
       if (navigator.share && matchMedia("(pointer: coarse)").matches) {
-        try { await navigator.share({ title: "Bandlist", text: `Entra in ${name} su Bandlist:`, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; }
+        try { await navigator.share({ title: "Bandlist", text: msg, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; }
       }
-      try { await navigator.clipboard.writeText(link); toast(fresh ? "Link nuovo copiato: quello vecchio non vale più" : "Link copiato: incollalo su WhatsApp"); }
+      try { await navigator.clipboard.writeText(`${msg}\n${link}`); toast(fresh ? "Messaggio con il link nuovo copiato: quello vecchio non vale più" : "Messaggio copiato: incollalo su WhatsApp"); }
       catch { toast("Copia il link qui sotto"); }
     } catch { out.textContent = ""; toast("Non riesco a creare il link. Riprova."); }
   }
