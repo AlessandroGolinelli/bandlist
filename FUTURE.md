@@ -103,3 +103,16 @@ Prima serve la versione per più band (punto 2b): uno spazio per band, registraz
 2. Prova gratuita con 3–5 band di amici, per capire se piace e cosa manca.
 3. App sugli store: prima Android (più semplice ed economico), poi iPhone.
 4. Abbonamento Pro.
+
+---
+
+## 4. Password di almeno 8 caratteri anche su Firebase (dopo aver tolto il PIN)
+
+Oggi il minimo di 8 caratteri lo controlla solo l'app, quando qualcuno si registra con email.
+Su Firebase non si può ancora attivare, perché i PIN della band storica sono di 6 cifre:
+con la regola "minimo 8" la band storica resterebbe chiusa fuori.
+
+Quando tutti e 5 avranno collegato Google e il PIN sarà stato tolto dall'app:
+- **Firebase:** Authentication › Impostazioni › **Criteri per le password**, minimo 8 caratteri, modalità "Richiedi".
+- **App:** togliere il pulsante "Entri col PIN? Tocca qui" e il codice del PIN
+  (`SCALETTA_CONFIG.members`/`logins` restano solo per il trasloco, se serve ancora).

@@ -2205,6 +2205,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     $("#em-btn").textContent = regMode ? "Crea l'account" : "Entra";
     $("#em-mode").textContent = regMode ? "Hai già un account? Entra" : "Non hai un account? Registrati";
     $("#pw").autocomplete = regMode ? "new-password" : "current-password";
+    $("#pw").placeholder = regMode ? "Almeno 8 caratteri" : "";
     $("#acct-err").hidden = true;
   });
   const acctErr = (msg) => { const el = $("#acct-err"); el.textContent = msg; el.hidden = !msg; };
@@ -2213,7 +2214,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     "auth/network-request-failed": "Niente connessione. Riprova appena sei online.",
     "auth/email-already-in-use": "Questa email ha già un account: premi “Hai già un account? Entra”.",
     "auth/invalid-email": "L'email non sembra giusta.",
-    "auth/weak-password": "La password deve avere almeno 6 caratteri.",
+    "auth/weak-password": "Scegli una password di almeno 8 caratteri.",
     "auth/popup-blocked": "Il browser ha bloccato la finestra di Google: consenti i popup e riprova.",
     "auth/operation-not-allowed": "Questo tipo di accesso non è ancora attivo.",
     "auth/admin-restricted-operation": "Le registrazioni non sono ancora aperte.",
@@ -2261,6 +2262,7 @@ details.box > summary::-webkit-details-marker { display: none; }
         const name = $("#reg-name").value.trim().replace(/\s+/g, " ").slice(0, 40);
         if (!name) { acctErr("Scrivi il tuo nome: lo vedranno gli altri della band."); return; }
         if (email.toLowerCase().endsWith(legacyDomain)) { acctErr("Usa la tua email vera."); return; }
+        if (pw.length < 8) { acctErr("Scegli una password di almeno 8 caratteri."); $("#pw").focus(); return; }
         pendingName = name;
       }
       btn.disabled = true;
