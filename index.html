@@ -36,6 +36,8 @@ window.SCALETTA_CONFIG = {
     appId: "1:332207797509:web:d6131a5b769eaa95f8b36c"
   },
   emailDomain: "bandlist.app",
+  // La band "storica" (quella che entra col PIN): i suoi dati vengono spostati una volta in bands/<questo id>.
+  legacyBand: "fondatori",
   members: ["Goli", "Cale", "G Spot", "Rollo", "Aema"],
   // Solo se in Firebase l'email non segue la regola automatica: nome → parte prima della @.
   logins: { "G Spot": "gspot" },
@@ -141,6 +143,14 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .pin-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .pin-row input { flex: 1 1 180px; font: 800 26px/1 var(--f-display); letter-spacing: .4em; text-align: center; padding: 14px; }
 .login-err { color: var(--red); font-weight: 600; font-size: 14px; }
+.acct { display: flex; flex-direction: column; gap: 14px; }
+.google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+.google-btn .g { font: 900 19px/1 var(--f-display); color: var(--blue); }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1.5px solid var(--line); }
+.invite-note { background: var(--pink-soft); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; }
+.band-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.invite-out { font-size: 12.5px; color: var(--muted); word-break: break-all; }
 
 /* ---------- Header ---------- */
 .top { display: flex; flex-direction: column; gap: 14px; }
@@ -215,7 +225,7 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .box { background: var(--bg); border: 1.5px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
 label.f { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--muted); min-width: 0; }
-input[type=text], input[type=url], input[type=search], input[type=password], select {
+input[type=text], input[type=url], input[type=search], input[type=password], input[type=email], select {
   width: 100%; min-width: 0; font: 16px var(--f-body); color: var(--ink); background: var(--soft);
   border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px;
 }
@@ -453,20 +463,64 @@ details.box > summary::-webkit-details-marker { display: none; }
 <!-- ================= LOGIN ================= -->
 <main class="login" id="login" hidden>
   <div class="name">
-    <span class="eyebrow" style="color:var(--pink)">Solo per la band</span>
+    <span class="eyebrow" style="color:var(--pink)">Prove e concerti della tua band</span>
     <h1>Bandlist<span class="title-dots" aria-hidden="true"><i style="background:var(--blue)"></i><i style="background:var(--green)"></i><i style="background:var(--pink)"></i><i style="background:var(--violet)"></i></span></h1>
   </div>
-  <p class="lead" id="login-lead">Chi sei? Tocca il tuo nome e inserisci il tuo PIN.</p>
-  <div class="names" id="names"></div>
-  <form id="pin-form" class="box" autocomplete="off" hidden>
-    <label class="f" for="pin" id="pin-label">PIN</label>
-    <div class="pin-row">
-      <input type="password" id="pin" inputmode="numeric" autocomplete="current-password" maxlength="12" placeholder="••••••">
-      <button class="btn big" type="submit" id="pin-btn">Entra</button>
-    </div>
-    <p class="login-err" id="login-err" hidden></p>
-    <p class="small-note">Il PIN te lo dà chi ha preparato l'app. Resti dentro finché non premi “Esci”.</p>
+  <div class="invite-note" id="invite-note" hidden></div>
+  <p class="lead" id="login-lead">Entra per ritrovare la tua band, oppure creane una nuova.</p>
+  <div class="acct" id="acct">
+    <button type="button" class="btn ghost big google-btn" id="google-btn"><span class="g" aria-hidden="true">G</span>Entra con Google</button>
+    <div class="or">oppure con email e password</div>
+    <form id="email-form" class="box">
+      <label class="f" id="reg-name-wrap" hidden>Il tuo nome<input type="text" id="reg-name" maxlength="40" autocomplete="nickname" placeholder="Come ti chiamano in band"></label>
+      <label class="f">Email<input type="email" id="em" autocomplete="email" required></label>
+      <label class="f">Password<input type="password" id="pw" autocomplete="current-password" minlength="6" required></label>
+      <button class="btn big" type="submit" id="em-btn">Entra</button>
+      <div class="row between">
+        <button type="button" class="btn quiet small" id="em-mode">Non hai un account? Registrati</button>
+        <button type="button" class="btn quiet small" id="em-forgot">Password dimenticata?</button>
+      </div>
+    </form>
+    <p class="login-err" id="acct-err" hidden></p>
+    <button type="button" class="btn quiet small" id="legacy-btn">Entri col PIN? Tocca qui</button>
+  </div>
+  <div id="legacy" class="acct" hidden>
+    <div class="names" id="names"></div>
+    <form id="pin-form" class="box" autocomplete="off" hidden>
+      <label class="f" for="pin" id="pin-label">PIN</label>
+      <div class="pin-row">
+        <input type="password" id="pin" inputmode="numeric" autocomplete="current-password" maxlength="12" placeholder="••••••">
+        <button class="btn big" type="submit" id="pin-btn">Entra</button>
+      </div>
+      <p class="login-err" id="login-err" hidden></p>
+      <p class="small-note">Il PIN te lo dà chi ha preparato l'app. Resti dentro finché non premi “Esci”.</p>
+    </form>
+    <button type="button" class="btn quiet small" id="legacy-back">← Entra con Google o email</button>
+  </div>
+</main>
+
+<!-- ================= LA TUA BAND (dopo l'accesso) ================= -->
+<main class="login" id="onboard" hidden>
+  <div class="name">
+    <span class="eyebrow" style="color:var(--pink)" id="ob-hello">Ciao!</span>
+    <h1>Bandlist<span class="title-dots" aria-hidden="true"><i style="background:var(--blue)"></i><i style="background:var(--green)"></i><i style="background:var(--pink)"></i><i style="background:var(--violet)"></i></span></h1>
+  </div>
+  <p class="lead" id="ob-wait">Un attimo, cerco la tua band…</p>
+  <p class="login-err" id="ob-err" hidden></p>
+  <button type="button" class="btn big" id="ob-retry" hidden>Riprova</button>
+  <section class="box" id="ob-join" hidden>
+    <h3 id="ob-join-title">Unisciti alla band</h3>
+    <p class="small-note">Ti hanno invitato: entrando vedi repertorio, proposte e scalette della band.</p>
+    <div class="row"><button type="button" class="btn big" id="ob-join-btn">Unisciti</button><button type="button" class="btn quiet" id="ob-join-no">No, grazie</button></div>
+  </section>
+  <form class="box" id="ob-create" autocomplete="off" hidden>
+    <h3>Crea la tua band</h3>
+    <label class="f">Nome della band<input type="text" id="ob-band" maxlength="60" required placeholder="Es. I Rumori Molesti"></label>
+    <button class="btn big" type="submit" id="ob-create-btn">Crea la band</button>
+    <p class="small-note">Poi da ⚙ Impostazioni copi il link d'invito e lo mandi agli altri, per esempio su WhatsApp.
+      Se invece una band c'è già, chiedi a loro il link e aprilo.</p>
   </form>
+  <div class="row"><button type="button" class="btn ghost small" id="ob-back" hidden>← Torna alla band</button><button type="button" class="btn quiet small" id="ob-logout">Esci</button></div>
 </main>
 
 <!-- ================= APP ================= -->
@@ -489,6 +543,16 @@ details.box > summary::-webkit-details-marker { display: none; }
         <label class="f" style="flex:1 1 220px">Nome della band<input type="text" id="band-name" maxlength="60" placeholder="Es. I Rumori Molesti"></label>
         <button class="btn" type="submit" style="align-self:flex-end">Salva</button>
       </form>
+      <div class="band-box" style="display:flex;flex-direction:column;gap:10px">
+        <p><strong>Invita nella band.</strong> Manda il link agli altri (per esempio su WhatsApp): chi lo apre ed entra si ritrova nella band.</p>
+        <div class="row"><button type="button" class="btn" id="invite-btn">Copia il link d'invito</button>
+          <button type="button" class="btn quiet small" id="invite-new" hidden>Crea un link nuovo</button></div>
+        <p class="invite-out" id="invite-out"></p>
+        <p class="small-note" id="band-members"></p>
+        <div id="my-bands"></div>
+        <div class="row"><button type="button" class="btn ghost small" id="new-band-btn">+ Crea un'altra band</button>
+          <button type="button" class="btn ghost small" id="link-google" hidden>Collega il mio Google</button></div>
+      </div>
       <form id="tune-form" autocomplete="off" style="display:flex;flex-direction:column;gap:8px">
         <label class="f">Le mie accordature (le vedi solo tu): oltre a Standard e Drop, aggiungi un nome tuo
           <span class="row"><input type="text" id="tune-name" maxlength="24" placeholder="Es. Open G, DADGAD" style="flex:1 1 160px"><button class="btn violet" type="submit">Aggiungi</button></span></label>
@@ -786,6 +850,7 @@ details.box > summary::-webkit-details-marker { display: none; }
       set: (d) => wrap(ref.set(d)),
       update: (d) => wrap(ref.update(flatten(d))),
       delete: () => wrap(ref.delete()),
+      get: () => wrap(ref.get()).then((s) => ({ id: s.id, exists: s.exists, data: () => s.data() })),
       onSnapshot: (next, err) => ref.onSnapshot((s) => next({ id: s.id, exists: s.exists, data: () => s.data(), metadata: s.metadata }), (e) => err && err(mapErr(e))),
     });
     return {
@@ -794,6 +859,7 @@ details.box > summary::-webkit-details-marker { display: none; }
         const col = fs.collection(path);
         return {
           doc: (id) => wDoc(id ? col.doc(id) : col.doc()),
+          get: () => wrap(col.get()).then((s) => ({ docs: s.docs.map((d) => ({ id: d.id, exists: true, data: () => d.data() })) })),
           onSnapshot: (next, err) => col.onSnapshot((s) => next({ docs: s.docs.map((d) => ({ id: d.id, exists: true, data: () => d.data(), metadata: d.metadata })), metadata: s.metadata }), (e) => err && err(mapErr(e))),
         };
       },
@@ -814,25 +880,34 @@ details.box > summary::-webkit-details-marker { display: none; }
       set: async (d) => { store[p] = clone(d); fire(); },
       update: async (d) => { if (!store[p]) throw { code: "invalid_argument" }; store[p] = merge(store[p], clone(d)); fire(); },
       delete: async () => { delete store[p]; fire(); },
+      get: async () => ({ id: p.split("/").pop(), exists: !!store[p], data: () => store[p] }),
       onSnapshot: (next) => { const f = () => next({ id: p.split("/").pop(), exists: !!store[p], data: () => store[p], metadata: { fromCache: false } }); subs.add(f); setTimeout(f, 0); return () => subs.delete(f); },
     });
     return {
       doc: wDoc,
-      collection: (c) => ({
-        doc: (id) => wDoc(c + "/" + (id || rid())),
-        onSnapshot: (next) => {
-          const depth = c.split("/").length + 1;
-          const f = () => next({ docs: Object.keys(store).filter((k) => k.startsWith(c + "/") && k.split("/").length === depth).map((k) => ({ id: k.split("/").pop(), exists: true, data: () => store[k], metadata: { fromCache: false } })), metadata: { fromCache: false } });
-          subs.add(f); setTimeout(f, 0); return () => subs.delete(f);
-        },
-      }),
+      collection: (c) => {
+        const depth = c.split("/").length + 1;
+        const list = () => Object.keys(store).filter((k) => k.startsWith(c + "/") && k.split("/").length === depth).map((k) => ({ id: k.split("/").pop(), exists: true, data: () => store[k], metadata: { fromCache: false } }));
+        return {
+          doc: (id) => wDoc(c + "/" + (id || rid())),
+          get: async () => ({ docs: list() }),
+          onSnapshot: (next) => { const f = () => next({ docs: list(), metadata: { fromCache: false } }); subs.add(f); setTimeout(f, 0); return () => subs.delete(f); },
+        };
+      },
     };
+  }
+
+  // Each band lives in bands/{id}/…: the app keeps using short paths ("songs/x"), this adds the prefix.
+  // Personal tunings stay outside the band (tunings/{uid}).
+  function bandStore(base, band) {
+    const p = (path) => (/^tunings\//.test(path) ? path : `bands/${band}/${path}`);
+    return { doc: (path) => base.doc(p(path)), collection: (path) => base.collection(p(path)) };
   }
 
   /* ========================================================= */
   let drag = null; // the ☰ drag in the concert setlist, while a finger is down
   const S = {
-    db: null, me: null, myName: "", canWrite: true,
+    db: null, me: null, myName: "", band: null, canWrite: true,
     songs: [], wishes: [], sessions: [], votes: {}, tunings: {}, tuneNames: [], concert: null, covers: [], settings: null, members: {},
     got: { songs: false, wishlist: false, sessions: false, votes: false, tunings: false, concert: false, covers: false, settings: false, members: false },
     confirmed: new Set(), slow: false, unsubs: [],
@@ -974,6 +1049,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     if (document.activeElement !== $("#band-name")) $("#band-name").value = name || "";
     $("#who-line").textContent = S.myName ? "Ciao " + S.myName : "";
     $("#logout-note").textContent = S.myName ? `Sei entrato come ${S.myName}.` : "";
+    renderBandBox();
   }
 
   function renderCover() {
@@ -1455,7 +1531,9 @@ details.box > summary::-webkit-details-marker { display: none; }
   });
   $("#band-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    await saveSettings({ bandName: $("#band-name").value.trim().slice(0, 60) }, "Nome salvato");
+    const name = $("#band-name").value.trim().slice(0, 60);
+    await saveSettings({ bandName: name }, "Nome salvato");
+    syncBandName(name);
   });
 
   let countTimer;
@@ -1749,7 +1827,7 @@ details.box > summary::-webkit-details-marker { display: none; }
       fillMissingArt();
     }, (err) => {
       S.got[key] = true;
-      notice(err.code === "invalid_argument" ? "Non hai accesso ai dati: esci e rientra con il tuo PIN." : "Una parte dei dati non si carica. Ricarica la pagina.", true);
+      notice(err.code === "invalid_argument" ? "Non hai accesso ai dati di questa band: esci e rientra." : "Una parte dei dati non si carica. Ricarica la pagina.", true);
       renderAll();
     }));
   }
@@ -1760,7 +1838,7 @@ details.box > summary::-webkit-details-marker { display: none; }
   const seedSp = (link) => { const sp = parseSpotify(link); return spFields(sp ? { ...sp, url: `https://open.spotify.com/${sp.type}/${sp.id}` } : null); };
   let seedTried = false;
   function maybeSeed() {
-    if (seedTried || !S.db) return;
+    if (seedTried || !S.db || S.band !== LEGACY) return;
     if (!["songs", "wishlist", "settings"].every((k) => S.confirmed.has(k))) return;
     seedTried = true;
     const seed = CFG.seed || {}, rep = seed.repertorio || [], pro = seed.proposte || [];
@@ -1777,7 +1855,8 @@ details.box > summary::-webkit-details-marker { display: none; }
 
   function startApp(db, uid, name) {
     S.db = db; S.me = uid; S.myName = name;
-    $("#login").hidden = true; $("#app").hidden = false;
+    $("#login").hidden = true; $("#onboard").hidden = true; $("#app").hidden = false;
+    $("#settings").hidden = true; $("#settings-btn").setAttribute("aria-expanded", "false");
     $("#demo-banner").hidden = !DEMO;
     renderAll();
     db.doc("members/" + uid).set({ name, lastSeen: Date.now() }).catch(() => {});
@@ -1796,41 +1875,322 @@ details.box > summary::-webkit-details-marker { display: none; }
     S.unsubs.forEach((u) => { try { u(); } catch {} }); S.unsubs = [];
     clearTimeout(slowTimer);
     Object.keys(S.got).forEach((k) => { S.got[k] = false; }); S.confirmed.clear();
-    S.db = null; S.me = null; S.myName = ""; S.tunings = {}; S.tuneNames = [];
+    S.db = null; S.me = null; S.myName = ""; S.band = null; S.tunings = {}; S.tuneNames = [];
+    S.songs = []; S.wishes = []; S.sessions = []; S.votes = {}; S.concert = null; S.covers = []; S.settings = null; S.members = {};
+    seedTried = false; $("#invite-out").textContent = "";
     setPlayer(null);
   }
 
-  /* ---------- login ---------- */
+  /* =========================================================
+     Bands: every band has its own space in bands/{id}/… and people join with an invite link.
+     users/{uid} = { name, band (the one open now), bands: {id: name} }.
+     The original band (PIN login) used the top of the database: it is copied once into bands/<legacyBand>.
+     ========================================================= */
+  const LEGACY = CFG.legacyBand || "fondatori";
+  const INV_KEY = "bandlist-invite";
+  const OLD_COLS = ["songs", "wishlist", "sessions", "covers", "meta", "members", "votes"];
+  let base = null;     // the whole database (not limited to one band)
+  let account = null;  // { uid, name, legacy, user }
+  let authApi = null;  // Firebase auth, null in demo mode
+  const rndCode = (n) => { const a = "abcdefghjkmnpqrstuvwxyz23456789", r = new Uint32Array(n); crypto.getRandomValues(r); return [...r].map((x) => a[x % a.length]).join(""); };
+  const inviteLink = (code) => location.origin + location.pathname + "?invito=" + code;
+  const bandLabel = (id) => (account && account.user && account.user.bands && account.user.bands[id]) || "La band";
+
+  // ?invito=CODE in the address: keep it until the person has logged in and said yes.
+  (() => {
+    let code = null;
+    try { code = new URLSearchParams(location.search).get("invito"); } catch {}
+    if (code && /^[a-z0-9]{6,24}$/i.test(code)) {
+      try { localStorage.setItem(INV_KEY, code.toLowerCase()); } catch {}
+      try { history.replaceState(null, "", location.pathname + location.hash); } catch {}
+    }
+  })();
+  const storedInvite = () => { try { return localStorage.getItem(INV_KEY); } catch { return null; } };
+  const clearInvite = () => { try { localStorage.removeItem(INV_KEY); } catch {} };
+  async function loadInvite() {
+    const code = storedInvite();
+    if (!code || !base) return null;
+    try {
+      const s = await base.doc("invites/" + code).get();
+      if (s.exists && s.data().band) return { code, band: s.data().band, name: s.data().name || "una band" };
+      clearInvite(); // the link was replaced or never existed
+      return { code, dead: true };
+    } catch { return null; }
+  }
+
+  /* ---------- screens ---------- */
   const members = (CFG.members || []).filter(Boolean);
-  let chosen = null;
+  let chosen = null, regMode = false;
   function renderNames() {
     $("#names").innerHTML = members.map((n) => `<button type="button" class="name-btn" data-name="${esc(n)}" aria-pressed="${chosen === n}">
       <span class="av" style="background:${avColor(n)}">${esc(n.trim().charAt(0).toUpperCase())}</span>${esc(n)}</button>`).join("");
   }
-  function showLogin(msg) {
-    $("#app").hidden = true; $("#login").hidden = false;
-    $("#login-lead").textContent = DEMO ? "Modalità prova: tocca un nome per entrare (senza PIN)." : "Chi sei? Tocca il tuo nome e inserisci il tuo PIN.";
-    renderNames();
-    const err = $("#login-err"); err.hidden = !msg; err.textContent = msg || "";
+  function showLegacy(on) {
+    $("#acct").hidden = on; $("#legacy").hidden = !on;
+    $("#legacy-back").hidden = DEMO;
+    if (on) renderNames();
   }
+  async function showLogin(msg) {
+    $("#app").hidden = true; $("#onboard").hidden = true; $("#login").hidden = false;
+    $("#pin-form").hidden = true; chosen = null;
+    $("#login-lead").textContent = DEMO ? "Modalità prova: tocca un nome per entrare (senza PIN)." : "Entra per ritrovare la tua band, oppure creane una nuova.";
+    showLegacy(DEMO);
+    const err = $("#acct-err"); err.hidden = !msg; err.textContent = msg || "";
+    const inv = await loadInvite(), note = $("#invite-note");
+    note.hidden = !inv;
+    if (inv) note.innerHTML = inv.dead ? "Questo link d'invito non vale più: chiedine uno nuovo alla band."
+      : `Ti hanno invitato in <strong>${esc(inv.name)}</strong>. Entra (o registrati) per unirti.`;
+  }
+  function showOnboard(mode, msg) {
+    $("#app").hidden = true; $("#login").hidden = true; $("#onboard").hidden = false;
+    $("#ob-hello").textContent = account && account.name ? "Ciao " + account.name : "Ciao!";
+    $("#ob-wait").hidden = mode !== "wait";
+    $("#ob-join").hidden = mode !== "join";
+    $("#ob-create").hidden = mode !== "create";
+    $("#ob-retry").hidden = mode !== "retry";
+    $("#ob-back").hidden = !(mode === "create" && account && account.backTo);
+    const err = $("#ob-err"); err.hidden = !msg; err.textContent = msg || "";
+  }
+
+  /* ---------- after login: find (or make) the band ---------- */
+  async function saveUser(patch) {
+    const next = { name: account.name, bands: {}, ...(account.user || {}), ...patch };
+    await base.doc("users/" + account.uid).set(next);
+    account.user = next;
+  }
+  const isMemberOf = async (band) => { try { return (await base.doc(`bands/${band}/members/${account.uid}`).get()).exists; } catch { return false; } };
+
+  async function afterLogin(acc) {
+    account = acc; account.backTo = null;
+    showOnboard("wait");
+    try {
+      const u = await base.doc("users/" + acc.uid).get();
+      account.user = u.exists ? u.data() : null;
+      if (account.user && account.user.name) account.name = account.user.name;
+      showOnboard("wait");
+      const inv = await loadInvite();
+      if (inv && !inv.dead) {
+        if (account.user && account.user.bands && account.user.bands[inv.band] && await isMemberOf(inv.band)) { clearInvite(); return openBand(inv.band); }
+        account.invite = inv;
+        $("#ob-join-title").textContent = `Unisciti a “${inv.name}”`;
+        return showOnboard("join");
+      }
+      if (!account.user && acc.legacy) {
+        const ok = await legacyJoin();
+        if (!ok) return showOnboard("create", "La tua band è già sull'app: chiedi a qualcuno il link d'invito (⚙ Impostazioni › Copia il link d'invito).");
+      }
+      const u2 = account.user || {};
+      for (const id of [u2.band, ...Object.keys(u2.bands || {})].filter(Boolean)) if (await isMemberOf(id)) return openBand(id);
+      showOnboard("create");
+    } catch (e) {
+      showOnboard("retry", acc.legacy ? "Non riesco a preparare i dati della band. Controlla la connessione e riprova." : "Problema di connessione. Riprova.");
+    }
+  }
+
+  // The original band: copy its data from the top of the database into bands/<LEGACY>, once.
+  async function legacyJoin() {
+    const b = await base.doc("bands/" + LEGACY).get();
+    const done = b.exists && b.data().migrated;
+    if (b.exists && !(await isMemberOf(LEGACY))) {
+      if (done || b.data().createdBy !== account.uid) return false;
+    }
+    if (!done) await migrateLegacy(b.exists);
+    await saveUser({ band: LEGACY, bands: { ...((account.user || {}).bands || {}), [LEGACY]: (b.exists && b.data().name) || bandLabel(LEGACY) } });
+    return true;
+  }
+  async function migrateLegacy(exists) {
+    const old = {};
+    for (const c of OLD_COLS) old[c] = (await base.collection(c).get()).docs;
+    const st = old.meta.find((d) => d.id === "settings");
+    const name = (st && st.data().bandName) || "La band";
+    if (!exists) await base.doc("bands/" + LEGACY).set({ name, createdBy: account.uid, createdAt: Date.now() });
+    await base.doc(`bands/${LEGACY}/members/${account.uid}`).set({ name: account.name, lastSeen: Date.now() });
+    const jobs = [];
+    for (const c of OLD_COLS) for (const d of old[c]) {
+      if (c === "members" && d.id === account.uid) continue;
+      const p = base.doc(`bands/${LEGACY}/${c}/${d.id}`).set(d.data());
+      // Other people's votes and names may already be there (a second try): not a problem.
+      jobs.push(c === "members" || c === "votes" ? p.catch(() => {}) : p);
+    }
+    await Promise.all(jobs);
+    await base.doc("bands/" + LEGACY).update({ migrated: true, name });
+    if (account.user) account.user.bands = { ...(account.user.bands || {}), [LEGACY]: name };
+    else account.user = { name: account.name, bands: { [LEGACY]: name } };
+  }
+
+  function openBand(id) {
+    stopApp();
+    S.band = id;
+    if (account.user && account.user.band !== id) saveUser({ band: id }).catch(() => {});
+    startApp(bandStore(base, id), account.uid, account.name);
+  }
+  async function createBand(name) {
+    const id = rndCode(12), now = Date.now();
+    await base.doc("bands/" + id).set({ name, createdBy: account.uid, createdAt: now });
+    await base.doc(`bands/${id}/members/${account.uid}`).set({ name: account.name, lastSeen: now });
+    await base.doc(`bands/${id}/meta/settings`).set({ bandName: name, count: DEFAULT_COUNT, seeded: true, updatedAt: now });
+    await saveUser({ band: id, bands: { ...((account.user || {}).bands || {}), [id]: name } });
+    openBand(id);
+  }
+  async function joinBand(inv) {
+    await base.doc(`bands/${inv.band}/members/${account.uid}`).set({ name: account.name, lastSeen: Date.now(), code: inv.code });
+    await saveUser({ band: inv.band, bands: { ...((account.user || {}).bands || {}), [inv.band]: inv.name } });
+    clearInvite(); account.invite = null;
+    openBand(inv.band);
+    toast(`Benvenuto in ${inv.name}!`);
+  }
+
+  $("#ob-create").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = $("#ob-band").value.trim().replace(/\s+/g, " ").slice(0, 60);
+    if (!name || !account) return;
+    const btn = $("#ob-create-btn"); btn.disabled = true;
+    try { await createBand(name); $("#ob-band").value = ""; }
+    catch { showOnboard("create", "Non sono riuscito a creare la band. Controlla la connessione e riprova."); }
+    finally { btn.disabled = false; }
+  });
+  $("#ob-join-btn").addEventListener("click", async () => {
+    if (!account || !account.invite) return;
+    const btn = $("#ob-join-btn"); btn.disabled = true;
+    try { await joinBand(account.invite); }
+    catch { showOnboard("join", "Non riesco a entrare: forse il link non vale più. Chiedine uno nuovo."); }
+    finally { btn.disabled = false; }
+  });
+  $("#ob-join-no").addEventListener("click", () => { clearInvite(); if (account) { account.invite = null; afterLogin(account); } });
+  $("#ob-retry").addEventListener("click", () => { if (account) afterLogin(account); });
+  $("#ob-back").addEventListener("click", () => { if (account && account.backTo) openBand(account.backTo); });
+
+  /* ---------- settings: invite, my bands, Google ---------- */
+  async function inviteCode(fresh) {
+    const band = S.band, ref = base.doc(`bands/${band}/meta/invite`);
+    const cur = await ref.get(), old = cur.exists ? cur.data().code : null;
+    if (old && !fresh) return old;
+    const code = rndCode(10), name = (S.settings && S.settings.bandName) || bandLabel(band);
+    await base.doc("invites/" + code).set({ band, name, createdBy: S.me, createdAt: Date.now() });
+    await ref.set({ code });
+    if (old) await base.doc("invites/" + old).delete().catch(() => {});
+    return code;
+  }
+  async function shareInvite(fresh) {
+    const out = $("#invite-out");
+    out.textContent = "Preparo il link…";
+    try {
+      const link = inviteLink(await inviteCode(fresh));
+      out.textContent = link;
+      $("#invite-new").hidden = false;
+      const name = (S.settings && S.settings.bandName) || "la band";
+      if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+        try { await navigator.share({ title: "Bandlist", text: `Entra in ${name} su Bandlist:`, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      try { await navigator.clipboard.writeText(link); toast(fresh ? "Link nuovo copiato: quello vecchio non vale più" : "Link copiato: incollalo su WhatsApp"); }
+      catch { toast("Copia il link qui sotto"); }
+    } catch { out.textContent = ""; toast("Non riesco a creare il link. Riprova."); }
+  }
+  $("#invite-btn").addEventListener("click", () => shareInvite(false));
+  $("#invite-new").addEventListener("click", () => shareInvite(true));
+  function syncBandName(name) {
+    if (!S.band || !name) return;
+    base.doc("bands/" + S.band).update({ name }).catch(() => {});
+    base.doc(`bands/${S.band}/meta/invite`).get().then((s) => { if (s.exists) base.doc("invites/" + s.data().code).update({ name }).catch(() => {}); }).catch(() => {});
+    if (account && account.user) saveUser({ bands: { ...(account.user.bands || {}), [S.band]: name } }).catch(() => {});
+  }
+  function renderBandBox() {
+    if (!S.db || !account) return;
+    const names = Object.values(S.members).map((m) => m && m.name).filter(Boolean);
+    $("#band-members").textContent = names.length ? "Nella band: " + names.join(", ") : "";
+    const bands = Object.entries((account.user && account.user.bands) || {});
+    $("#my-bands").innerHTML = bands.length > 1 ? `<p class="small-note" style="margin-bottom:6px">Le tue band (tocca per passare a un'altra):</p><div class="band-list">${bands.map(([id, n]) =>
+      `<button type="button" class="btn small ${id === S.band ? "" : "ghost"}" data-band="${esc(id)}" ${id === S.band ? 'aria-current="true"' : ""}>${esc(n)}</button>`).join("")}</div>` : "";
+    const u = authApi && authApi.currentUser;
+    $("#link-google").hidden = !u || u.providerData.some((p) => p.providerId === "google.com");
+  }
+  $("#my-bands").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-band]");
+    if (b && b.dataset.band !== S.band) openBand(b.dataset.band);
+  });
+  $("#new-band-btn").addEventListener("click", () => { account.backTo = S.band; stopApp(); showOnboard("create"); });
+
+  /* ---------- login: demo, PIN (original band), Google, email ---------- */
   $("#names").addEventListener("click", (e) => {
     const b = e.target.closest("[data-name]"); if (!b) return;
     chosen = b.dataset.name; renderNames();
-    if (DEMO) { try { localStorage.setItem("scaletta-demo-user", chosen); } catch {} startApp(localStore(), "demo-" + slug(chosen), chosen); return; }
+    if (DEMO) { try { localStorage.setItem("scaletta-demo-user", chosen); } catch {} afterLogin({ uid: "demo-" + slug(chosen), name: chosen, legacy: true }); return; }
     $("#pin-form").hidden = false; $("#pin-label").textContent = `PIN di ${chosen}`; $("#login-err").hidden = true;
     $("#pin").value = ""; $("#pin").focus();
   });
+  $("#legacy-btn").addEventListener("click", () => showLegacy(true));
+  $("#legacy-back").addEventListener("click", () => showLegacy(false));
+  $("#em-mode").addEventListener("click", () => {
+    regMode = !regMode;
+    $("#reg-name-wrap").hidden = !regMode;
+    $("#em-btn").textContent = regMode ? "Crea l'account" : "Entra";
+    $("#em-mode").textContent = regMode ? "Hai già un account? Entra" : "Non hai un account? Registrati";
+    $("#pw").autocomplete = regMode ? "new-password" : "current-password";
+    $("#acct-err").hidden = true;
+  });
+  const acctErr = (msg) => { const el = $("#acct-err"); el.textContent = msg; el.hidden = !msg; };
+  const authMsg = (c) => ({
+    "auth/too-many-requests": "Troppi tentativi. Aspetta qualche minuto e riprova.",
+    "auth/network-request-failed": "Niente connessione. Riprova appena sei online.",
+    "auth/email-already-in-use": "Questa email ha già un account: premi “Hai già un account? Entra”.",
+    "auth/invalid-email": "L'email non sembra giusta.",
+    "auth/weak-password": "La password deve avere almeno 6 caratteri.",
+    "auth/popup-blocked": "Il browser ha bloccato la finestra di Google: consenti i popup e riprova.",
+    "auth/operation-not-allowed": "Questo tipo di accesso non è ancora attivo.",
+    "auth/admin-restricted-operation": "Le registrazioni non sono ancora aperte.",
+    "auth/credential-already-in-use": "Questo account Google è già usato da un altro utente.",
+    "auth/account-exists-with-different-credential": "Questa email ha già un account con password: entra con email e password.",
+  })[c] || "Email o password sbagliate.";
+
+  async function demoLogout() { try { localStorage.removeItem("scaletta-demo-user"); } catch {} stopApp(); account = null; showLogin(); }
 
   if (DEMO) {
+    base = localStore();
     let saved = null; try { saved = localStorage.getItem("scaletta-demo-user"); } catch {}
-    $("#logout-btn").addEventListener("click", () => { try { localStorage.removeItem("scaletta-demo-user"); } catch {} stopApp(); chosen = null; showLogin(); });
-    if (saved && members.includes(saved)) startApp(localStore(), "demo-" + slug(saved), saved); else showLogin();
+    $("#logout-btn").addEventListener("click", demoLogout);
+    $("#ob-logout").addEventListener("click", demoLogout);
+    if (saved && members.includes(saved)) afterLogin({ uid: "demo-" + slug(saved), name: saved, legacy: true }); else showLogin();
   } else if (!window.firebase) {
     showLogin("Non riesco a collegarmi. Controlla la connessione e ricarica la pagina.");
   } else {
     firebase.initializeApp(CFG.firebase);
     const auth = firebase.auth(), fs = firebase.firestore();
+    authApi = auth; auth.languageCode = "it";
+    base = firebaseStore(fs);
+    const legacyDomain = "@" + (CFG.emailDomain || "bandlist.app");
+    const isLegacy = (u) => !!u.email && u.email.toLowerCase().endsWith(legacyDomain) && u.providerData.some((p) => p.providerId === "password");
     const nameForEmail = (email) => members.find((n) => emailFor(n) === String(email || "").toLowerCase()) || String(email || "").split("@")[0];
+    let pendingName = "";
+    const google = () => new firebase.auth.GoogleAuthProvider();
+
+    $("#google-btn").addEventListener("click", async () => {
+      acctErr("");
+      try { await auth.signInWithPopup(google()); }
+      catch (err) { if (err && err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") acctErr(authMsg(err.code)); }
+    });
+    $("#email-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = $("#em").value.trim(), pw = $("#pw").value, btn = $("#em-btn");
+      acctErr("");
+      if (regMode) {
+        const name = $("#reg-name").value.trim().replace(/\s+/g, " ").slice(0, 40);
+        if (!name) { acctErr("Scrivi il tuo nome: lo vedranno gli altri della band."); return; }
+        if (email.toLowerCase().endsWith(legacyDomain)) { acctErr("Usa la tua email vera."); return; }
+        pendingName = name;
+      }
+      btn.disabled = true;
+      try {
+        if (regMode) { const c = await auth.createUserWithEmailAndPassword(email, pw); c.user.updateProfile({ displayName: pendingName }).catch(() => {}); }
+        else await auth.signInWithEmailAndPassword(email, pw);
+      } catch (err) { acctErr(authMsg(err && err.code)); }
+      finally { btn.disabled = false; }
+    });
+    $("#em-forgot").addEventListener("click", async () => {
+      const email = $("#em").value.trim();
+      if (!email) { acctErr("Scrivi la tua email qui sopra, poi premi di nuovo “Password dimenticata?”."); $("#em").focus(); return; }
+      try { await auth.sendPasswordResetEmail(email); acctErr(""); toast("Ti ho mandato un'email per cambiare la password"); }
+      catch (err) { acctErr(err && err.code === "auth/invalid-email" ? authMsg(err.code) : "Non riesco a mandare l'email. Controlla l'indirizzo."); }
+    });
     $("#pin-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!chosen) return;
@@ -1845,10 +2205,22 @@ details.box > summary::-webkit-details-marker { display: none; }
         const el = $("#login-err"); el.textContent = msg; el.hidden = false;
       } finally { btn.disabled = false; }
     });
+    $("#link-google").addEventListener("click", async () => {
+      const u = auth.currentUser; if (!u) return;
+      try { await u.linkWithPopup(google()); toast("Fatto! Da ora puoi entrare anche con “Entra con Google”"); renderBandBox(); }
+      catch (err) { if (err && err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") toast(authMsg(err.code)); }
+    });
     $("#logout-btn").addEventListener("click", () => auth.signOut());
+    $("#ob-logout").addEventListener("click", () => auth.signOut());
     auth.onAuthStateChanged((u) => {
-      if (u) { if (S.me !== u.uid) { stopApp(); startApp(firebaseStore(fs), u.uid, nameForEmail(u.email)); } }
-      else { stopApp(); chosen = null; $("#pin-form").hidden = true; showLogin(); }
+      if (u) {
+        if (account && account.uid === u.uid) return;
+        stopApp();
+        const legacy = isLegacy(u);
+        const name = (legacy ? nameForEmail(u.email) : pendingName || u.displayName || String(u.email || "").split("@")[0]).slice(0, 40) || "Musicista";
+        pendingName = "";
+        afterLogin({ uid: u.uid, name, legacy });
+      } else { stopApp(); account = null; showLogin(); }
     });
   }
 

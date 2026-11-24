@@ -2,27 +2,59 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function isMember(b) { return signedIn() && exists(/databases/$(database)/documents/bands/$(b)/members/$(request.auth.uid)); }
 
-    // Ognuno può scrivere solo i propri voti: un voto a testa per ogni proposta.
-    match /votes/{uid} {
-      allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+    // Il proprio profilo (nome, band di cui si fa parte) e le accordature: solo il proprietario.
+    match /users/{uid} {
+      allow read, write: if signedIn() && me() == uid;
     }
-
-    // Accordature personali: ognuno vede e modifica solo le proprie.
     match /tunings/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read, write: if signedIn() && me() == uid;
     }
 
-    // Ognuno può aggiornare solo il proprio nome.
-    match /members/{uid} {
-      allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+    // Inviti: chi ha il link può leggerlo; li crea e cambia solo chi è nella band.
+    match /invites/{code} {
+      allow get: if true;
+      allow create: if isMember(request.resource.data.band);
+      allow update: if isMember(resource.data.band) && request.resource.data.band == resource.data.band;
+      allow delete: if isMember(resource.data.band);
     }
 
-    // Tutto il resto dell'app: solo chi ha fatto l'accesso.
+    // Ogni band ha il suo spazio: dentro ci entra solo chi ne fa parte.
+    match /bands/{b} {
+      allow get: if signedIn();
+      allow create: if signedIn() && request.resource.data.createdBy == me();
+      allow update: if isMember(b);
+
+      // Si entra in una band se la si è creata o con un codice d'invito valido.
+      match /members/{uid} {
+        allow read: if isMember(b) || (signedIn() && me() == uid);
+        allow create: if signedIn() && (
+          isMember(b)
+          || (me() == uid && get(/databases/$(database)/documents/bands/$(b)).data.createdBy == me())
+          || (me() == uid && get(/databases/$(database)/documents/invites/$(request.resource.data.code)).data.band == b)
+        );
+        allow update: if isMember(b) && me() == uid;
+        allow delete: if isMember(b);
+      }
+
+      // Voti: un voto a testa, ognuno cambia solo i propri.
+      match /votes/{uid} {
+        allow read, create: if isMember(b);
+        allow update, delete: if isMember(b) && me() == uid;
+      }
+
+      match /{coll}/{id} {
+        allow read, write: if isMember(b) && coll in ['songs', 'wishlist', 'sessions', 'covers', 'meta'];
+      }
+    }
+
+    // Vecchi dati della band storica (prima delle band separate): solo lettura, servono per il trasloco
+    // in bands/fondatori. Dopo il trasloco li legge solo chi è in quella band.
     match /{coll}/{id} {
-      allow read, write: if signedIn() && coll in ['songs', 'wishlist', 'sessions', 'covers', 'meta'];
+      allow read: if signedIn() && coll in ['songs', 'wishlist', 'sessions', 'covers', 'meta', 'members', 'votes']
+        && (!exists(/databases/$(database)/documents/bands/fondatori) || isMember('fondatori'));
     }
   }
 }

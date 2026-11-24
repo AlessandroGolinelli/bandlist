@@ -60,3 +60,46 @@ ma ognuno deve rifare tutta la configurazione: va bene solo per amici un po' sma
 ## Consiglio
 Se si vuole davvero aprire ad altre band, conviene fare **login Google + uno spazio per band insieme**,
 in un unico passaggio, invece di rifare l'accesso due volte.
+
+---
+
+## 3. Mettere l'app sugli store e guadagnarci (senza pubblicità)
+
+### Prerequisito
+Prima serve la versione per più band (punto 2b): uno spazio per band, registrazione libera e codice invito.
+
+### Pubblicare sugli store
+- **Come:** l'app resta una pagina web, dentro un "guscio" che la rende un'app vera. Si usa **Capacitor**,
+  che è gratuito, e non serve riscriverla.
+- **Costi fissi:** Google Play 25 $ una tantum, Apple 99 $ all'anno (serve un Mac con Xcode).
+- **Richieste degli store:**
+  - Apple scarta le app che sembrano "un sito impacchettato": servono icona, schermata d'avvio
+    e un minimo di funzionamento anche senza rete.
+  - Se c'è "Entra con Google", Apple chiede anche **"Entra con Apple"**.
+  - La **cancellazione dell'account** si deve poter fare dall'app.
+  - Servono una **pagina sulla privacy** e le schede sui dati raccolti da compilare in entrambi gli store.
+
+### Come guadagnarci
+| Modello | Come funziona | Pro / contro |
+|---|---|---|
+| App a pagamento (es. 3,99 € una tantum) | Chi la scarica paga | Semplice, ma pochi pagano senza provarla e ognuno dei membri dovrebbe pagare |
+| **Abbonamento per band** (es. 2–3 €/mese o 20–25 €/anno) | Paga uno solo, tutta la band la usa | Entrate ogni mese; diviso in 5 costa pochissimo |
+| Gratis + Pro | Gratis con limiti (es. 1 band, 30 canzoni); la Pro sblocca concerti, PDF, canzoni illimitate | Fa crescere gli utenti; chi prova si affeziona |
+
+**Scelta consigliata:** gratis + **abbonamento Pro per band**. Paga il leader e gli altri entrano col codice invito.
+
+### Da sapere sui soldi
+- Apple e Google trattengono il **15%** di ogni pagamento (programma per piccoli sviluppatori, sotto 1 milione l'anno).
+- Dentro le app degli store gli abbonamenti si vendono **con il sistema di pagamento dello store**,
+  non con link a PayPal o Stripe. **RevenueCat** (gratuito all'inizio) gestisce gli abbonamenti di
+  entrambi gli store in un posto solo.
+- Con tanti utenti Firebase passa al piano **Blaze**, a consumo: i costi si coprono con gli abbonamenti.
+  Le Cloud Functions per verificare i pagamenti richiedono comunque Blaze.
+- **Fisco (Italia):** all'inizio può bastare la prestazione occasionale; oltre una certa cifra serve la
+  **partita IVA** (spesso regime forfettario). Sentire un commercialista prima di partire.
+
+### Percorso a tappe
+1. App per più band + login Google (e Apple), sul sito come oggi.
+2. Prova gratuita con 3–5 band di amici, per capire se piace e cosa manca.
+3. App sugli store: prima Android (più semplice ed economico), poi iPhone.
+4. Abbonamento Pro.

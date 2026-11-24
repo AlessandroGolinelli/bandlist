@@ -1,6 +1,7 @@
 # Bandlist — contesto per Claude Code
 
-App web della band di Alessandro per **prepararsi alle prove**, più la scaletta (borderò) per i concerti.
+App web per **prepararsi alle prove**, più la scaletta (borderò) per i concerti. Nata per la band di Alessandro,
+ora la può usare qualunque band: ognuna ha il suo spazio e si entra con un link d'invito.
 Tutto è in un solo file, `index.html`: niente build, niente dipendenze da installare.
 Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: spiegagli le cose in modo semplice.
 
@@ -42,18 +43,28 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   artista esatto, copertina). Si salvano negli stessi campi: `spotifyType` = `"youtube"` o `"apple"` (altrimenti è
   Spotify), `spotifyId` = id del video/brano, `spotifyUrl` = link. Vedi `parseLink`, `resolveLink`, `linkKind`, `embedUrl`.
   La tendina degli artisti (Apple Music) compare quando c'è un titolo, anche scritto a mano.
-- **Accesso** — schermata "Chi sei?" con i 5 nomi di `SCALETTA_CONFIG.members` + PIN di 6 cifre.
-  Sotto: Firebase Auth email/password con email `nome@bandlist.app` (vedi `emailFor`; eccezioni in `SCALETTA_CONFIG.logins`, es. G Spot → `gspot@bandlist.app`) e PIN come password.
-  La registrazione libera va disattivata in Firebase, così entrano solo i 5 utenti creati a mano.
+- **Accesso** — "Entra con Google" (popup, non redirect: su iPhone il redirect non va con github.io) oppure
+  email e password (con "Registrati" e "Password dimenticata?"). La band storica entra ancora col **PIN**
+  ("Entri col PIN? Tocca qui": i 5 nomi di `SCALETTA_CONFIG.members`, email `nome@bandlist.app` da `emailFor`,
+  eccezioni in `SCALETTA_CONFIG.logins`). In Impostazioni "Collega il mio Google" (`linkWithPopup`) tiene lo stesso uid.
+- **Band** — dopo l'accesso `afterLogin` legge `users/{uid}`: apre la band corrente, oppure mostra "Unisciti a …"
+  (se c'è un invito) o "Crea la tua band". Tutti i dati di una band stanno in `bands/{id}/…`: l'app usa sempre
+  percorsi corti (`songs/x`) e `bandStore` aggiunge il prefisso (tranne `tunings/`). Impostazioni: "Copia il link
+  d'invito" (`?invito=CODICE`, salvato in localStorage `bandlist-invite` finché non si entra), "Crea un link nuovo"
+  (il vecchio smette di valere), elenco membri, passaggio tra le proprie band, "+ Crea un'altra band".
+- **Trasloco della band storica** — i suoi dati erano in cima al database. Al primo accesso col PIN, `legacyJoin` /
+  `migrateLegacy` li **copiano** (senza cancellarli) in `bands/fondatori` (`SCALETTA_CONFIG.legacyBand`), con
+  membri e voti di tutti. La copia vecchia resta in sola lettura.
 
 ## Struttura del file
 
 - In cima, `window.SCALETTA_CONFIG`: configurazione Firebase, `emailDomain`, `members`, `seed`
   (canzoni di partenza caricate una sola volta al primo accesso se il database è vuoto, con id fissi `seed-...`).
 - **Modalità prova**: se `firebase.apiKey` inizia con `INCOLLA`, l'app usa `localStorage`
-  (chiave `scaletta-demo-v1`) e si entra senza PIN. Con la configurazione vera usa Firestore.
+  (chiave `scaletta-demo-v1`) e si entra toccando un nome (come la band storica: fa anche il trasloco).
+  Con la configurazione vera usa Firestore.
 - `firebaseStore()` e `localStore()` espongono la stessa piccola API
-  (`doc(path).set/update/delete/onSnapshot`, `collection(path).doc()/onSnapshot`).
+  (`doc(path).set/update/delete/get/onSnapshot`, `collection(path).doc()/get/onSnapshot`).
   `update` su Firestore appiattisce gli oggetti annidati in percorsi con il punto (`flatten`), così
   `update({done: {[id]: true}})` non sovrascrive tutta la mappa.
 - Stato in `S`, rendering con template string e `esc()` per ogni dato inserito dagli utenti.
@@ -61,17 +72,24 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
 
 ## Dati (Firestore)
 
+Tutto quello che riguarda una band sta sotto `bands/{bandId}/` (nella tabella i percorsi sono relativi a lì,
+tranne le righe segnate *globale*).
+
 | Collezione | Contenuto |
 |---|---|
 | `songs/{id}` | `title, artist, key, own, level (1/2/3/null), adjust, lastAdjust, spotifyId, spotifyType (track/album/youtube/apple), spotifyUrl, art, addedBy, addedAt` |
 | `wishlist/{id}` | `title, artist, spotify*, art, addedBy, addedAt` |
-| `votes/{uid}` | `picks: {wishId: 1 \| -1}` — scrivibile solo dal proprietario |
+| `votes/{uid}` | `picks: {wishId: 1 \| -1}` — modificabile solo dal proprietario |
 | `sessions/{AAAA-MM-GG}` | `songIds[], done{songId: bool}, coverDone, manual, createdBy, createdAt` |
 | `covers/{AAAA-MM}` | dati del brano + `wishId, wish, setBy, learned, learnedSongId, carriedFrom` |
 | `meta/settings` | `count, bandName, seeded` |
 | `meta/concert` | `songIds[]` (ordine della scaletta), `updatedBy, updatedAt` |
-| `tunings/{uid}` | `songs: {songId: {note: E\|D#\|D\|C#\|C\|B, type: Standard\|Drop\|nome proprio}}, custom: [nomi propri]` — leggibile e scrivibile solo dal proprietario |
-| `members/{uid}` | `name, lastSeen` — scrivibile solo dal proprietario |
+| `meta/invite` | `code` — il codice d'invito attuale |
+| `members/{uid}` | `name, lastSeen, code` (il codice usato per entrare) — chi c'è dentro è della band |
+| `bands/{id}` *globale* | `name, createdBy, createdAt, migrated` |
+| `invites/{code}` *globale* | `band, name, createdBy, createdAt` — leggibile da chiunque abbia il link |
+| `users/{uid}` *globale* | `name, band (quella aperta), bands: {id: nome}` — solo il proprietario |
+| `tunings/{uid}` *globale* | `songs: {songId: {note: E\|D#\|D\|C#\|C\|B, type: Standard\|Drop\|nome proprio}}, custom: [nomi propri]` — solo il proprietario |
 
 Le regole di sicurezza sono in `regole-firestore.txt`: se aggiungi una collezione, aggiungila anche lì.
 
@@ -97,9 +115,12 @@ GitHub Pages da `main`, cartella root → https://alessandrogolinelli.github.io/
 
 1. ~~Nomi veri dei 5 membri~~ fatto: Goli, Cale, G Spot, Rollo, Aema.
 2. **Firebase**: creare il progetto, Firestore (Europa) con le regole di `regole-firestore.txt`,
-   Authentication email/password con i 5 utenti e la registrazione disattivata, poi incollare
+   Authentication email/password con i 5 utenti, poi incollare
    `firebaseConfig` in cima a `index.html`. Aggiungere `alessandrogolinelli.github.io` ai domini autorizzati.
    Restare sul piano gratuito Spark (non Blaze).
 3. **Link Spotify** delle canzoni (soprattutto Intercity ed Easier, pezzi della band): si possono mettere nel
    `seed` (quarto elemento) prima del primo accesso, oppure dall'app con ✎. Le copertine mancanti si
    recuperano da sole (`fillMissingArt`).
+4. **Aprire alle altre band** (in quest'ordine): pubblicare l'app nuova e le regole nuove insieme; uno della band
+   storica entra col PIN (fa il trasloco in `bands/fondatori`); solo dopo attivare Google in Authentication ›
+   Sign-in method e riaprire le registrazioni (Authentication › Impostazioni › Azioni utente).
