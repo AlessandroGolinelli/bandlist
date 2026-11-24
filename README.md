@@ -10,3 +10,5 @@ e votate le proposte (+1 / −1, un voto a testa).
 
 Finché in `index.html` non c'è la configurazione di Firebase, l'app gira in modalità prova:
 funziona tutto, ma i dati restano sul dispositivo di chi la usa.
+
+Per continuare a lavorarci con Claude Code, il contesto del progetto è in `CLAUDE.md`.
