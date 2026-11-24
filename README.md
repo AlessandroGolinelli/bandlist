@@ -1,4 +1,4 @@
-# La Scaletta
+# Bandlist
 
 L'app della band per preparare le prove: il pulsantone estrae le canzoni da ripassare,
 segnate quante volte le avete ripassate e quanto bene le sapete, scegliete la cover del mese

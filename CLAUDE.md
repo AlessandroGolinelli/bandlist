@@ -1,4 +1,4 @@
-# La Scaletta — contesto per Claude Code
+# Bandlist — contesto per Claude Code
 
 App web della band di Alessandro per **prepararsi alle prove** (non per i concerti).
 Tutto è in un solo file, `index.html`: niente build, niente dipendenze da installare.
@@ -25,7 +25,7 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   in basso (`#player`) che non si ricarica quando i dati cambiano. I campi link sono `type="text"` perché
   dal telefono il link arriva spesso con del testo intorno.
 - **Accesso** — schermata "Chi sei?" con i 5 nomi di `SCALETTA_CONFIG.members` + PIN di 6 cifre.
-  Sotto: Firebase Auth email/password con email `nome@lascaletta.band` (vedi `emailFor`) e PIN come password.
+  Sotto: Firebase Auth email/password con email `nome@bandlist` (vedi `emailFor`) e PIN come password.
   La registrazione libera va disattivata in Firebase, così entrano solo i 5 utenti creati a mano.
 
 ## Struttura del file
@@ -75,7 +75,7 @@ GitHub Pages da `main`, cartella root → https://alessandrogolinelli.github.io/
 
 ## Da fare
 
-1. Mettere i **nomi veri** dei 5 membri in `members` (ora "Membro 2…5").
+1. ~~Nomi veri dei 5 membri~~ fatto: Goli, Cale, G Spot, Rollo, Aema.
 2. **Firebase**: creare il progetto, Firestore (Europa) con le regole di `regole-firestore.txt`,
    Authentication email/password con i 5 utenti e la registrazione disattivata, poi incollare
    `firebaseConfig` in cima a `index.html`. Aggiungere `alessandrogolinelli.github.io` ai domini autorizzati.
