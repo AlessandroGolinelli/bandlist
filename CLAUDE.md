@@ -24,6 +24,11 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   (non l'artista). Per l'artista l'app cerca il titolo su Apple Music (`itunes.apple.com/search`, CORS aperto) e mostra un menu a tendina (`#s-artist-pick`, `#w-artist-pick`, `artistCandidates`); il campo resta scrivibile a mano. La pagina embed di Spotify ha l'artista ma non ha CORS; il player è l'iframe `open.spotify.com/embed/...` in una barra fissa
   in basso (`#player`) che non si ricarica quando i dati cambiano. I campi link sono `type="text"` perché
   dal telefono il link arriva spesso con del testo intorno.
+- **Link YouTube / Apple Music** — oltre a Spotify si può incollare un link YouTube (oEmbed `youtube.com/oembed`:
+  titolo "Artista - Brano (Official…)" diviso da `splitYouTube`) o Apple Music (`itunes.apple.com/lookup`: titolo,
+  artista esatto, copertina). Si salvano negli stessi campi: `spotifyType` = `"youtube"` o `"apple"` (altrimenti è
+  Spotify), `spotifyId` = id del video/brano, `spotifyUrl` = link. Vedi `parseLink`, `resolveLink`, `linkKind`, `embedUrl`.
+  La tendina degli artisti (Apple Music) compare quando c'è un titolo, anche scritto a mano.
 - **Accesso** — schermata "Chi sei?" con i 5 nomi di `SCALETTA_CONFIG.members` + PIN di 6 cifre.
   Sotto: Firebase Auth email/password con email `nome@bandlist.app` (vedi `emailFor`) e PIN come password.
   La registrazione libera va disattivata in Firebase, così entrano solo i 5 utenti creati a mano.
@@ -45,7 +50,7 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
 
 | Collezione | Contenuto |
 |---|---|
-| `songs/{id}` | `title, artist, key, own, level (1/2/3/null), adjust, lastAdjust, spotifyId, spotifyType, spotifyUrl, art, addedBy, addedAt` |
+| `songs/{id}` | `title, artist, key, own, level (1/2/3/null), adjust, lastAdjust, spotifyId, spotifyType (track/album/youtube/apple), spotifyUrl, art, addedBy, addedAt` |
 | `wishlist/{id}` | `title, artist, spotify*, art, addedBy, addedAt` |
 | `votes/{uid}` | `picks: {wishId: 1 \| -1}` — scrivibile solo dal proprietario |
 | `sessions/{AAAA-MM-GG}` | `songIds[], done{songId: bool}, coverDone, manual, createdBy, createdAt` |
