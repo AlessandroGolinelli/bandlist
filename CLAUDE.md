@@ -55,10 +55,10 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
 - **Il proprio nome** — nella schermata "Crea la tua band" / "Unisciti a …" c'è "Il tuo nome nella band" (`#ob-name`, già scritto
   col nome di Google o dell'account, si può correggere); in Impostazioni "Il tuo nome" (`#me-form`) lo cambia nel profilo
   (`users/{uid}.name`) e in `members/{uid}` di tutte le proprie band.
-- **Admin** — ogni band ha un admin (`bands/{id}.admin`; nelle band vecchie vale `createdBy`), con l'etichetta "admin"
-  accanto al nome. Solo l'admin vede "Togli" e "Fai admin" (passa il ruolo, con conferma e senza Annulla: dopo non si
+- **Frontman (admin)** — nell'app il ruolo si chiama **frontman**; nel codice e nei dati resta `admin`. Ogni band ha un admin (`bands/{id}.admin`; nelle band vecchie vale `createdBy`), con l'etichetta "frontman"
+  accanto al nome. Solo l'admin vede "Togli" e "Fai frontman" (passa il ruolo, con conferma e senza Annulla: dopo non si
   potrebbe più). Se l'admin esce, il ruolo passa a chi ha aperto l'app più di recente (`leaveBand`); se l'admin non è più
-  nella band, chiunque può premere "Diventa admin". Vedi `bandAdmin`, `amAdmin`; le regole lo controllano (`isAdmin`).
+  nella band, chiunque può premere "Diventa frontman". Vedi `bandAdmin`, `amAdmin`; le regole lo controllano (`isAdmin`).
 - **Membri e account** — in Impostazioni l'elenco dei membri ha "Togli", solo per l'admin (toglie anche i voti; il nome resta barrato con "Annulla (8)" che conta all'indietro, `kicked`; i voti di chi
   non è più nella band non contano in `voteTally`). "Esci da questa band" (`leaveBand`, con conferma: l'ultimo che esce
   cancella la band e tutti i suoi dati). "Cancella il mio account" (`deleteAccountData` + `user.delete()`: Firebase vuole

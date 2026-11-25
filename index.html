@@ -153,7 +153,7 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .member-list .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
 .member-list .acts { display: flex; gap: 2px; flex: none; }
 .member-list .btn.quiet.make-admin { color: var(--blue); }
-.admin-tag { font: 700 11px/1 Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--blue); border-radius: 999px; padding: 4px 7px; }
+.admin-tag { font: italic 900 12px/1 Archivo, sans-serif; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: var(--blue); border-radius: 999px; padding: 4px 7px; }
 .member-list .btn.quiet.unkick { color: var(--blue); font-variant-numeric: tabular-nums; }
 .legal { font-size: 12.5px; color: var(--muted); text-align: center; }
 
@@ -2158,13 +2158,13 @@ details.box > summary::-webkit-details-marker { display: none; }
     const admin = bandAdmin(), boss = admin === S.me, known = S.got.members && S.got.band;
     const row = (id) => {
       if (gone.includes(id)) return `<li class="gone"><span>${esc(nameOf(id))}</span><button type="button" class="btn quiet small unkick" data-unkick="${esc(id)}">Annulla (${kicked[id].left})</button></li>`;
-      const who = `<span class="who">${esc(nameOf(id))}${id === S.me ? ' <span class="small-note">(tu)</span>' : ""}${id === admin ? ' <span class="admin-tag">admin</span>' : ""}</span>`;
-      const acts = boss && id !== S.me ? `<span class="acts"><button type="button" class="btn quiet small make-admin" data-admin="${esc(id)}">Fai admin</button><button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button></span>` : "";
+      const who = `<span class="who">${esc(nameOf(id))}${id === S.me ? ' <span class="small-note">(tu)</span>' : ""}${id === admin ? ' <span class="admin-tag">frontman</span>' : ""}</span>`;
+      const acts = boss && id !== S.me ? `<span class="acts"><button type="button" class="btn quiet small make-admin" data-admin="${esc(id)}">Fai frontman</button><button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button></span>` : "";
       return `<li>${who}${acts}</li>`;
     };
-    const note = !known ? "" : boss ? (inBand.length > 1 ? `<p class="small-note">Sei l'admin: solo tu puoi togliere qualcuno dalla band. Con “Fai admin” passi il ruolo a un altro.</p>` : "")
-      : admin ? `<p class="small-note">Solo l'admin (${esc(nameOf(admin))}) può togliere qualcuno dalla band.</p>`
-      : `<p class="small-note">La band non ha un admin. <button type="button" class="btn quiet small make-admin" data-claim="1">Diventa admin</button></p>`;
+    const note = !known ? "" : boss ? (inBand.length > 1 ? `<p class="small-note">Sei il frontman: solo tu puoi togliere qualcuno dalla band. Con “Fai frontman” passi il ruolo a un altro.</p>` : "")
+      : admin ? `<p class="small-note">Solo il frontman (${esc(nameOf(admin))}) può togliere qualcuno dalla band.</p>`
+      : `<p class="small-note">La band non ha un frontman. <button type="button" class="btn quiet small make-admin" data-claim="1">Diventa frontman</button></p>`;
     $("#band-members").innerHTML = ids.length ? `<p class="small-note" style="margin-bottom:4px">Nella band (${inBand.length}):</p><ul class="member-list">${ids.map(row).join("")}</ul>${note}` : "";
     const bands = Object.entries((account.user && account.user.bands) || {});
     $("#my-bands").innerHTML = bands.length > 1 ? `<p class="small-note" style="margin-bottom:6px">Le tue band (tocca per passare a un'altra):</p><div class="band-list">${bands.map(([id, n]) =>
@@ -2192,8 +2192,8 @@ details.box > summary::-webkit-details-marker { display: none; }
     if (a && S.band) {
       const to = a.dataset.claim ? S.me : a.dataset.admin;
       if (!isIn(to) || (a.dataset.claim ? bandAdmin() : !amAdmin())) return;
-      if (!a.dataset.claim && !confirm(`Vuoi passare il ruolo di admin a ${S.members[to].name}? Poi solo ${S.members[to].name} potrà togliere le persone dalla band (e ridarti il ruolo).`)) return;
-      await write(() => base.doc("bands/" + S.band).update({ admin: to }), a.dataset.claim ? "Ora sei l'admin della band" : `${S.members[to].name} ora è l'admin`);
+      if (!a.dataset.claim && !confirm(`Vuoi passare il ruolo di frontman a ${S.members[to].name}? Poi solo ${S.members[to].name} potrà togliere le persone dalla band (e ridarti il ruolo).`)) return;
+      await write(() => base.doc("bands/" + S.band).update({ admin: to }), a.dataset.claim ? "Ora sei il frontman della band" : `${S.members[to].name} ora è il frontman`);
       return;
     }
     const b = e.target.closest("[data-kick]"); if (!b || !S.db || !amAdmin()) return;
@@ -2242,7 +2242,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     const b = S.band, name = (S.settings && S.settings.bandName) || bandLabel(b);
     const alone = !Object.keys(S.members).some((id) => id !== account.uid);
     if (!confirm(alone ? `Sei l'ultimo rimasto in “${name}”: uscendo, la band e tutte le sue canzoni vengono cancellate per sempre. Vuoi uscire?`
-      : `Vuoi uscire da “${name}”? Per rientrare ti servirà un nuovo link d'invito.${amAdmin() ? " Il ruolo di admin passerà a un altro della band." : ""}`)) return;
+      : `Vuoi uscire da “${name}”? Per rientrare ti servirà un nuovo link d'invito.${amAdmin() ? " Il ruolo di frontman passerà a un altro della band." : ""}`)) return;
     stopApp(); showOnboard("wait");
     try {
       await leaveBand(b, account.uid);
