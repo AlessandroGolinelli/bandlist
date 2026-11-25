@@ -442,6 +442,7 @@ details.box > summary::-webkit-details-marker { display: none; }
 .player .close { width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: #fff; font-size: 18px; cursor: pointer; flex: none; }
 .notice { border-radius: 12px; padding: 12px 14px; font-size: 14px; background: var(--blue-soft); color: var(--ink); }
 .notice.err { background: var(--red-soft); }
+.nudge { display: flex; flex-direction: column; gap: 10px; }
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + var(--player-h) + env(safe-area-inset-bottom, 0px));
   background: var(--ink); color: #fff; padding: 8px 8px 8px 16px; border-radius: 12px; font-size: 14px; font-weight: 500;
@@ -517,6 +518,8 @@ details.box > summary::-webkit-details-marker { display: none; }
   <p class="lead" id="ob-wait">Un attimo, cerco la tua band…</p>
   <p class="login-err" id="ob-err" hidden></p>
   <button type="button" class="btn big" id="ob-retry" hidden>Riprova</button>
+  <label class="f box" id="ob-name-wrap" hidden>Il tuo nome nella band<input type="text" id="ob-name" maxlength="40" autocomplete="nickname" placeholder="Come ti chiamano in band">
+    <span class="small-note">Lo vedono gli altri della band. Puoi cambiarlo quando vuoi da ⚙ Impostazioni.</span></label>
   <section class="box" id="ob-join" hidden>
     <h3 id="ob-join-title">Unisciti alla band</h3>
     <p class="small-note">Ti hanno invitato: entrando vedi repertorio, proposte e scalette della band.</p>
@@ -549,6 +552,10 @@ details.box > summary::-webkit-details-marker { display: none; }
     <div class="demo" id="demo-banner" hidden><strong>Modalità prova.</strong> L'app funziona, ma i dati restano su questo dispositivo. Per condividerli con la band va collegata a Firebase (vedi la guida).</div>
     <section class="box settings" id="settings" hidden>
       <h3>Impostazioni</h3>
+      <form id="me-form" class="row" autocomplete="off">
+        <label class="f" style="flex:1 1 220px">Il tuo nome<input type="text" id="me-name" maxlength="40" autocomplete="nickname" placeholder="Come ti chiamano in band"></label>
+        <button class="btn" type="submit" style="align-self:flex-end">Salva</button>
+      </form>
       <form id="band-form" class="row" autocomplete="off">
         <label class="f" style="flex:1 1 220px">Nome della band<input type="text" id="band-name" maxlength="60" placeholder="Es. I Rumori Molesti"></label>
         <button class="btn" type="submit" style="align-self:flex-end">Salva</button>
@@ -593,6 +600,10 @@ details.box > summary::-webkit-details-marker { display: none; }
   </nav>
 
   <div id="notice" class="notice" hidden></div>
+  <div id="google-nudge" class="notice nudge" hidden>
+    <span><strong>Entri ancora col PIN.</strong> Collega il tuo Google: da quel momento entri con “Entra con Google”. Tra un po' il PIN non ci sarà più.</span>
+    <div class="row"><button type="button" class="btn small" id="nudge-link">Collega il mio Google</button><button type="button" class="btn quiet small" id="nudge-later">Dopo</button></div>
+  </div>
 
   <!-- PROVA -->
   <section class="panel" data-panel="prova">
@@ -1065,6 +1076,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     const name = S.settings && S.settings.bandName;
     $("#band-line").textContent = name || "La band";
     if (document.activeElement !== $("#band-name")) $("#band-name").value = name || "";
+    if (document.activeElement !== $("#me-name")) $("#me-name").value = S.myName || "";
     $("#who-line").textContent = S.myName ? "Ciao " + S.myName : "";
     $("#logout-note").textContent = S.myName ? `Sei entrato come ${S.myName}.` : "";
     renderBandBox();
@@ -1548,6 +1560,23 @@ details.box > summary::-webkit-details-marker { display: none; }
     $("#tune-name").value = "";
     await saveTunings(S.tunings, [...S.tuneNames, n], `Aggiunta “${n}”: ora la trovi accanto alla nota`);
   });
+  // Change my name: it is saved in my profile and in every band I am in.
+  $("#me-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = $("#me-name").value.trim().replace(/\s+/g, " ").slice(0, 40);
+    if (!name) { toast("Scrivi il tuo nome"); $("#me-name").value = S.myName || ""; return; }
+    if (!account || name === S.myName) return;
+    const before = S.myName, bands = Object.keys((account.user && account.user.bands) || {});
+    if (S.band && !bands.includes(S.band)) bands.push(S.band);
+    const ok = await write(async () => {
+      await S.db.doc("members/" + S.me).update({ name });
+      account.name = name; S.myName = name;
+      await saveUser({});
+      await Promise.all(bands.filter((b) => b !== S.band).map((b) => base.doc(`bands/${b}/members/${account.uid}`).update({ name }).catch(() => {})));
+    }, `Ora ti chiami “${name}”`);
+    if (!ok) { account.name = before; S.myName = before; }
+    renderHeader();
+  });
   $("#band-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = $("#band-name").value.trim().slice(0, 60);
@@ -1878,13 +1907,16 @@ details.box > summary::-webkit-details-marker { display: none; }
       .catch(() => { seedTried = false; });
   }
 
+  $("#nudge-later").addEventListener("click", () => { nudgeLater = true; $("#google-nudge").hidden = true; });
   function startApp(db, uid, name) {
     S.db = db; S.me = uid; S.myName = name;
     $("#login").hidden = true; $("#onboard").hidden = true; $("#app").hidden = false;
     $("#settings").hidden = true; $("#settings-btn").setAttribute("aria-expanded", "false");
     $("#demo-banner").hidden = !DEMO;
     renderAll();
-    db.doc("members/" + uid).set({ name, lastSeen: Date.now() }).catch(() => {});
+    // pin: true while this person still enters with the PIN only (shown in Impostazioni for the original band).
+    db.doc("members/" + uid).set({ name, lastSeen: Date.now(), ...(authApi ? { pin: pinOnly() } : {}) }).catch(() => {});
+    $("#google-nudge").hidden = nudgeLater || !pinOnly();
     slowTimer = setTimeout(() => { S.slow = true; renderAll(); if (Object.values(S.got).some(Boolean)) notice("Alcuni dati potrebbero non essere aggiornati: la connessione è lenta."); }, 10000);
     subscribe("songs", db.collection("songs"), (s) => { S.songs = docs(s).filter((x) => x.title); });
     subscribe("wishlist", db.collection("wishlist"), (s) => { S.wishes = docs(s).filter((x) => x.title); });
@@ -1917,6 +1949,13 @@ details.box > summary::-webkit-details-marker { display: none; }
   let base = null;     // the whole database (not limited to one band)
   let account = null;  // { uid, name, legacy, user }
   let authApi = null;  // Firebase auth, null in demo mode
+  let nudgeLater = false; // "Dopo" pressed on the Google reminder: don't show it again until the page is reloaded
+  // Still entering with the old PIN only (original band, Google not linked yet)?
+  const pinOnly = () => {
+    const u = authApi && authApi.currentUser;
+    return !!u && String(u.email || "").toLowerCase().endsWith("@" + (CFG.emailDomain || "bandlist.app"))
+      && !u.providerData.some((p) => p.providerId === "google.com");
+  };
   const kicked = {};   // people just removed from the band, still undoable: uid -> { name, before, picks, db, band, left, timer }
   const KICK_UNDO_SECONDS = 8;
   const rndCode = (n) => { const a = "abcdefghjkmnpqrstuvwxyz23456789", r = new Uint32Array(n); crypto.getRandomValues(r); return [...r].map((x) => a[x % a.length]).join(""); };
@@ -1974,6 +2013,8 @@ details.box > summary::-webkit-details-marker { display: none; }
     $("#ob-wait").hidden = mode !== "wait";
     $("#ob-join").hidden = mode !== "join";
     $("#ob-create").hidden = mode !== "create";
+    $("#ob-name-wrap").hidden = mode !== "join" && mode !== "create";
+    if (mode === "join" || mode === "create") $("#ob-name").value = (account && account.name) || "";
     $("#ob-retry").hidden = mode !== "retry";
     $("#ob-back").hidden = !(mode === "create" && account && account.backTo);
     const err = $("#ob-err"); err.hidden = !msg; err.textContent = msg || "";
@@ -1981,7 +2022,7 @@ details.box > summary::-webkit-details-marker { display: none; }
 
   /* ---------- after login: find (or make) the band ---------- */
   async function saveUser(patch) {
-    const next = { name: account.name, bands: {}, ...(account.user || {}), ...patch };
+    const next = { bands: {}, ...(account.user || {}), name: account.name, ...patch };
     await base.doc("users/" + account.uid).set(next);
     account.user = next;
   }
@@ -2067,17 +2108,25 @@ details.box > summary::-webkit-details-marker { display: none; }
     toast(`Benvenuto in ${inv.name}!`);
   }
 
+  // The name typed on the band screen (prefilled with the Google/account name). False if empty.
+  function takeObName() {
+    const n = $("#ob-name").value.trim().replace(/\s+/g, " ").slice(0, 40);
+    if (!n) { showOnboard($("#ob-join").hidden ? "create" : "join", "Scrivi il tuo nome: lo vedranno gli altri della band."); $("#ob-name").focus(); return false; }
+    if (n !== account.name) Object.keys((account.user && account.user.bands) || {})
+      .forEach((b) => base.doc(`bands/${b}/members/${account.uid}`).update({ name: n }).catch(() => {}));
+    account.name = n; return true;
+  }
   $("#ob-create").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = $("#ob-band").value.trim().replace(/\s+/g, " ").slice(0, 60);
-    if (!name || !account) return;
+    if (!name || !account || !takeObName()) return;
     const btn = $("#ob-create-btn"); btn.disabled = true;
     try { await createBand(name); $("#ob-band").value = ""; }
     catch { showOnboard("create", "Non sono riuscito a creare la band. Controlla la connessione e riprova."); }
     finally { btn.disabled = false; }
   });
   $("#ob-join-btn").addEventListener("click", async () => {
-    if (!account || !account.invite) return;
+    if (!account || !account.invite || !takeObName()) return;
     const btn = $("#ob-join-btn"); btn.disabled = true;
     try { await joinBand(account.invite); }
     catch { showOnboard("join", "Non riesco a entrare: forse il link non vale più. Chiedine uno nuovo."); }
@@ -2129,6 +2178,13 @@ details.box > summary::-webkit-details-marker { display: none; }
     $("#band-members").innerHTML = ids.length ? `<p class="small-note" style="margin-bottom:4px">Nella band (${inBand.length}):</p><ul class="member-list">${ids.map((id) =>
       gone.includes(id) ? `<li class="gone"><span>${esc(nameOf(id))}</span><button type="button" class="btn quiet small unkick" data-unkick="${esc(id)}">Annulla (${kicked[id].left})</button></li>`
       : `<li><span>${esc(nameOf(id))}${id === S.me ? " <span class=\"small-note\">(tu)</span>" : ""}</span>${id === S.me ? "" : `<button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button>`}</li>`).join("")}</ul>` : "";
+    // Original band: who still enters with the PIN. Old member docs without the flag count as PIN.
+    if (S.band === LEGACY && authApi) {
+      const still = inBand.filter((id) => S.members[id].pin !== false).map(nameOf);
+      $("#band-members").insertAdjacentHTML("beforeend", still.length
+        ? `<p class="small-note" style="margin-top:6px">Entrano ancora col PIN: <strong>${esc(still.join(", "))}</strong>. Quando tutti avranno collegato Google, il PIN si può togliere.</p>`
+        : `<p class="small-note" style="margin-top:6px">Tutti hanno collegato Google: il PIN si può togliere.</p>`);
+    }
     const bands = Object.entries((account.user && account.user.bands) || {});
     $("#my-bands").innerHTML = bands.length > 1 ? `<p class="small-note" style="margin-bottom:6px">Le tue band (tocca per passare a un'altra):</p><div class="band-list">${bands.map(([id, n]) =>
       `<button type="button" class="btn small ${id === S.band ? "" : "ghost"}" data-band="${esc(id)}" ${id === S.band ? 'aria-current="true"' : ""}>${esc(n)}</button>`).join("")}</div>` : "";
@@ -2318,11 +2374,18 @@ details.box > summary::-webkit-details-marker { display: none; }
         const el = $("#login-err"); el.textContent = msg; el.hidden = false;
       } finally { btn.disabled = false; }
     });
-    $("#link-google").addEventListener("click", async () => {
+    async function linkGoogle() {
       const u = auth.currentUser; if (!u) return;
-      try { await u.linkWithPopup(google()); toast("Fatto! Da ora puoi entrare anche con “Entra con Google”"); renderBandBox(); }
-      catch (err) { if (err && err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") toast(authMsg(err.code)); }
-    });
+      try {
+        await u.linkWithPopup(google());
+        $("#google-nudge").hidden = true;
+        if (S.db) S.db.doc("members/" + S.me).update({ pin: false }).catch(() => {});
+        toast("Fatto! Da ora puoi entrare con “Entra con Google”");
+        renderBandBox();
+      } catch (err) { if (err && err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") toast(authMsg(err.code)); }
+    }
+    $("#link-google").addEventListener("click", linkGoogle);
+    $("#nudge-link").addEventListener("click", linkGoogle);
     $("#logout-btn").addEventListener("click", () => auth.signOut());
     $("#ob-logout").addEventListener("click", () => auth.signOut());
     $("#delete-account").addEventListener("click", async () => {

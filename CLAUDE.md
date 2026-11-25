@@ -48,11 +48,16 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   email e password (con "Registrati" e "Password dimenticata?"). La band storica entra ancora col **PIN**
   ("Entri col PIN? Tocca qui": i 5 nomi di `SCALETTA_CONFIG.members`, email `nome@bandlist.app` da `emailFor`,
   eccezioni in `SCALETTA_CONFIG.logins`). In Impostazioni "Collega il mio Google" (`linkWithPopup`) tiene lo stesso uid.
+  Passaggio al dopo-PIN: chi entra solo col PIN vede in cima il promemoria `#google-nudge` ("Collega il mio Google" / "Dopo");
+  `members/{uid}.pin` (`pinOnly()`, scritto a ogni apertura) e in Impostazioni della band storica la riga "Entrano ancora col PIN: …".
 - **Band** — dopo l'accesso `afterLogin` legge `users/{uid}`: apre la band corrente, oppure mostra "Unisciti a …"
   (se c'è un invito) o "Crea la tua band". Tutti i dati di una band stanno in `bands/{id}/…`: l'app usa sempre
   percorsi corti (`songs/x`) e `bandStore` aggiunge il prefisso (tranne `tunings/`). Impostazioni: "Copia il link
   d'invito" (`?invito=CODICE`, salvato in localStorage `bandlist-invite` finché non si entra), "Crea un link nuovo"
   (sempre visibile; il vecchio smette di valere), elenco membri, passaggio tra le proprie band, "+ Crea un'altra band".
+- **Il proprio nome** — nella schermata "Crea la tua band" / "Unisciti a …" c'è "Il tuo nome nella band" (`#ob-name`, già scritto
+  col nome di Google o dell'account, si può correggere); in Impostazioni "Il tuo nome" (`#me-form`) lo cambia nel profilo
+  (`users/{uid}.name`) e in `members/{uid}` di tutte le proprie band.
 - **Membri e account** — in Impostazioni l'elenco dei membri ha "Togli" (toglie anche i voti; il nome resta barrato con "Annulla (8)" che conta all'indietro, `kicked`; i voti di chi
   non è più nella band non contano in `voteTally`). "Esci da questa band" (`leaveBand`, con conferma: l'ultimo che esce
   cancella la band e tutti i suoi dati). "Cancella il mio account" (`deleteAccountData` + `user.delete()`: Firebase vuole

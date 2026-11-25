@@ -112,7 +112,12 @@ Oggi il minimo di 8 caratteri lo controlla solo l'app, quando qualcuno si regist
 Su Firebase non si può ancora attivare, perché i PIN della band storica sono di 6 cifre:
 con la regola "minimo 8" la band storica resterebbe chiusa fuori.
 
+**Come sapere quando:** chi entra col PIN vede in cima all'app il promemoria "Collega il mio Google".
+In ⚙ Impostazioni della band storica, sotto i membri, c'è la riga "Entrano ancora col PIN: …":
+quando dice "Tutti hanno collegato Google", si può procedere.
+
 Quando tutti e 5 avranno collegato Google e il PIN sarà stato tolto dall'app:
 - **Firebase:** Authentication › Impostazioni › **Criteri per le password**, minimo 8 caratteri, modalità "Richiedi".
 - **App:** togliere il pulsante "Entri col PIN? Tocca qui" e il codice del PIN
   (`SCALETTA_CONFIG.members`/`logins` restano solo per il trasloco, se serve ancora).
+  Via anche il promemoria `#google-nudge`, `pinOnly()`, il campo `pin` dei membri e la riga in Impostazioni.
