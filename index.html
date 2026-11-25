@@ -150,6 +150,10 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .account-box { display: flex; flex-direction: column; gap: 10px; border-top: 1.5px solid var(--line); padding-top: 14px; }
 .member-list .btn.quiet, .btn.quiet.danger { color: var(--red); }
 .member-list li.gone > span { color: var(--muted); text-decoration: line-through; }
+.member-list .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.member-list .acts { display: flex; gap: 2px; flex: none; }
+.member-list .btn.quiet.make-admin { color: var(--blue); }
+.admin-tag { font: 700 11px/1 Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--blue); border-radius: 999px; padding: 4px 7px; }
 .member-list .btn.quiet.unkick { color: var(--blue); font-variant-numeric: tabular-nums; }
 .legal { font-size: 12.5px; color: var(--muted); text-align: center; }
 
@@ -912,8 +916,8 @@ details.box > summary::-webkit-details-marker { display: none; }
   let drag = null; // the ☰ drag in the concert setlist, while a finger is down
   const S = {
     db: null, me: null, myName: "", band: null, canWrite: true,
-    songs: [], wishes: [], sessions: [], votes: {}, tunings: {}, tuneNames: [], concert: null, covers: [], settings: null, members: {},
-    got: { songs: false, wishlist: false, sessions: false, votes: false, tunings: false, concert: false, covers: false, settings: false, members: false },
+    songs: [], wishes: [], sessions: [], votes: {}, tunings: {}, tuneNames: [], concert: null, covers: [], settings: null, members: {}, bandInfo: null,
+    got: { songs: false, wishlist: false, sessions: false, votes: false, tunings: false, concert: false, covers: false, settings: false, members: false, band: false },
     confirmed: new Set(), slow: false, unsubs: [],
     view: "prova", filter: "", sort: "todo", editing: null, pendingCount: null, busy: false,
     linkInfo: { s: null, w: null, e: null }, playing: null,
@@ -1901,13 +1905,14 @@ details.box > summary::-webkit-details-marker { display: none; }
     subscribe("covers", db.collection("covers"), (s) => { S.covers = docs(s).filter((x) => /^\d{4}-\d{2}$/.test(x.id)); });
     subscribe("settings", db.doc("meta/settings"), (s) => { S.settings = s.exists ? s.data() : null; });
     subscribe("members", db.collection("members"), (s) => { const m = {}; s.docs.forEach((d) => { m[d.id] = d.data(); }); S.members = m; });
+    subscribe("band", base.doc("bands/" + S.band), (s) => { S.bandInfo = s.exists ? s.data() : null; });
   }
   function stopApp() {
     S.unsubs.forEach((u) => { try { u(); } catch {} }); S.unsubs = [];
     clearTimeout(slowTimer);
     Object.keys(S.got).forEach((k) => { S.got[k] = false; }); S.confirmed.clear();
     S.db = null; S.me = null; S.myName = ""; S.band = null; S.tunings = {}; S.tuneNames = [];
-    S.songs = []; S.wishes = []; S.sessions = []; S.votes = {}; S.concert = null; S.covers = []; S.settings = null; S.members = {};
+    S.songs = []; S.wishes = []; S.sessions = []; S.votes = {}; S.concert = null; S.covers = []; S.settings = null; S.members = {}; S.bandInfo = null;
     seedTried = false; $("#invite-out").textContent = "";
     setPlayer(null);
   }
@@ -1925,6 +1930,14 @@ details.box > summary::-webkit-details-marker { display: none; }
   let authApi = null;  // Firebase auth, null in demo mode
   const kicked = {};   // people just removed from the band, still undoable: uid -> { name, before, picks, db, band, left, timer }
   const KICK_UNDO_SECONDS = 8;
+  // The admin is the only one who can remove people, and can pass the role to someone else.
+  // bands/{id}.admin (older bands: whoever created it). If the admin is no longer in the band, anyone can take the role.
+  const isIn = (id) => !!(id && S.members[id] && S.members[id].name);
+  function bandAdmin() {
+    const b = S.bandInfo || {}, a = b.admin || b.createdBy;
+    return isIn(a) ? a : null;
+  }
+  const amAdmin = () => bandAdmin() === S.me;
   const rndCode = (n) => { const a = "abcdefghjkmnpqrstuvwxyz23456789", r = new Uint32Array(n); crypto.getRandomValues(r); return [...r].map((x) => a[x % a.length]).join(""); };
   const inviteLink = (code) => location.origin + location.pathname + "?invito=" + code;
   const bandLabel = (id) => (account && account.user && account.user.bands && account.user.bands[id]) || "La band";
@@ -2038,7 +2051,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     for (const c of OLD_COLS) old[c] = (await base.collection(c).get()).docs;
     const st = old.meta.find((d) => d.id === "settings");
     const name = (st && st.data().bandName) || "La band";
-    if (!exists) await base.doc("bands/" + LEGACY).set({ name, createdBy: account.uid, createdAt: Date.now() });
+    if (!exists) await base.doc("bands/" + LEGACY).set({ name, createdBy: account.uid, admin: account.uid, createdAt: Date.now() });
     await base.doc(`bands/${LEGACY}/members/${account.uid}`).set({ name: account.name, lastSeen: Date.now() });
     const jobs = [];
     for (const c of OLD_COLS) for (const d of old[c]) {
@@ -2061,7 +2074,7 @@ details.box > summary::-webkit-details-marker { display: none; }
   }
   async function createBand(name) {
     const id = rndCode(12), now = Date.now();
-    await base.doc("bands/" + id).set({ name, createdBy: account.uid, createdAt: now });
+    await base.doc("bands/" + id).set({ name, createdBy: account.uid, admin: account.uid, createdAt: now });
     await base.doc(`bands/${id}/members/${account.uid}`).set({ name: account.name, lastSeen: now });
     await base.doc(`bands/${id}/meta/settings`).set({ bandName: name, count: DEFAULT_COUNT, seeded: true, updatedAt: now });
     await saveUser({ band: id, bands: { ...((account.user || {}).bands || {}), [id]: name } });
@@ -2142,9 +2155,17 @@ details.box > summary::-webkit-details-marker { display: none; }
     const gone = Object.keys(kicked).filter((id) => kicked[id].band === S.band && !inBand.includes(id));
     const nameOf = (id) => String(S.members[id] && S.members[id].name || kicked[id].name);
     const ids = inBand.concat(gone).sort((a, b) => nameOf(a).localeCompare(nameOf(b), "it"));
-    $("#band-members").innerHTML = ids.length ? `<p class="small-note" style="margin-bottom:4px">Nella band (${inBand.length}):</p><ul class="member-list">${ids.map((id) =>
-      gone.includes(id) ? `<li class="gone"><span>${esc(nameOf(id))}</span><button type="button" class="btn quiet small unkick" data-unkick="${esc(id)}">Annulla (${kicked[id].left})</button></li>`
-      : `<li><span>${esc(nameOf(id))}${id === S.me ? " <span class=\"small-note\">(tu)</span>" : ""}</span>${id === S.me ? "" : `<button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button>`}</li>`).join("")}</ul>` : "";
+    const admin = bandAdmin(), boss = admin === S.me, known = S.got.members && S.got.band;
+    const row = (id) => {
+      if (gone.includes(id)) return `<li class="gone"><span>${esc(nameOf(id))}</span><button type="button" class="btn quiet small unkick" data-unkick="${esc(id)}">Annulla (${kicked[id].left})</button></li>`;
+      const who = `<span class="who">${esc(nameOf(id))}${id === S.me ? ' <span class="small-note">(tu)</span>' : ""}${id === admin ? ' <span class="admin-tag">admin</span>' : ""}</span>`;
+      const acts = boss && id !== S.me ? `<span class="acts"><button type="button" class="btn quiet small make-admin" data-admin="${esc(id)}">Fai admin</button><button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button></span>` : "";
+      return `<li>${who}${acts}</li>`;
+    };
+    const note = !known ? "" : boss ? (inBand.length > 1 ? `<p class="small-note">Sei l'admin: solo tu puoi togliere qualcuno dalla band. Con “Fai admin” passi il ruolo a un altro.</p>` : "")
+      : admin ? `<p class="small-note">Solo l'admin (${esc(nameOf(admin))}) può togliere qualcuno dalla band.</p>`
+      : `<p class="small-note">La band non ha un admin. <button type="button" class="btn quiet small make-admin" data-claim="1">Diventa admin</button></p>`;
+    $("#band-members").innerHTML = ids.length ? `<p class="small-note" style="margin-bottom:4px">Nella band (${inBand.length}):</p><ul class="member-list">${ids.map(row).join("")}</ul>${note}` : "";
     const bands = Object.entries((account.user && account.user.bands) || {});
     $("#my-bands").innerHTML = bands.length > 1 ? `<p class="small-note" style="margin-bottom:6px">Le tue band (tocca per passare a un'altra):</p><div class="band-list">${bands.map(([id, n]) =>
       `<button type="button" class="btn small ${id === S.band ? "" : "ghost"}" data-band="${esc(id)}" ${id === S.band ? 'aria-current="true"' : ""}>${esc(n)}</button>`).join("")}</div>` : "";
@@ -2167,7 +2188,15 @@ details.box > summary::-webkit-details-marker { display: none; }
       renderBandBox();
       return;
     }
-    const b = e.target.closest("[data-kick]"); if (!b || !S.db) return;
+    const a = e.target.closest("[data-admin], [data-claim]");
+    if (a && S.band) {
+      const to = a.dataset.claim ? S.me : a.dataset.admin;
+      if (!isIn(to) || (a.dataset.claim ? bandAdmin() : !amAdmin())) return;
+      if (!a.dataset.claim && !confirm(`Vuoi passare il ruolo di admin a ${S.members[to].name}? Poi solo ${S.members[to].name} potrà togliere le persone dalla band (e ridarti il ruolo).`)) return;
+      await write(() => base.doc("bands/" + S.band).update({ admin: to }), a.dataset.claim ? "Ora sei l'admin della band" : `${S.members[to].name} ora è l'admin`);
+      return;
+    }
+    const b = e.target.closest("[data-kick]"); if (!b || !S.db || !amAdmin()) return;
     const uid = b.dataset.kick, before = S.members[uid], picks = S.votes[uid], db = S.db;
     if (!before || uid === S.me || kicked[uid]) return;
     const k = kicked[uid] = { name: before.name, before, picks, db, band: S.band, left: KICK_UNDO_SECONDS };
@@ -2197,7 +2226,15 @@ details.box > summary::-webkit-details-marker { display: none; }
         await Promise.all(s.docs.map((d) => base.doc(`bands/${b}/${c}/${d.id}`).delete()));
       }
       await base.doc("bands/" + b).delete().catch(() => {});
-    } else await base.doc(`bands/${b}/votes/${uid}`).delete().catch(() => {});
+    } else {
+      // The admin is leaving: the role goes to whoever was here most recently.
+      const band = await base.doc("bands/" + b).get().catch(() => null), d = (band && band.exists && band.data()) || {};
+      if ((d.admin || d.createdBy) === uid) {
+        const next = mem.docs.filter((x) => x.id !== uid).sort((x, y) => (y.data().lastSeen || 0) - (x.data().lastSeen || 0))[0];
+        await base.doc("bands/" + b).update({ admin: next.id }).catch(() => {});
+      }
+      await base.doc(`bands/${b}/votes/${uid}`).delete().catch(() => {});
+    }
     await base.doc(`bands/${b}/members/${uid}`).delete();
   }
   $("#leave-band").addEventListener("click", async () => {
@@ -2205,7 +2242,7 @@ details.box > summary::-webkit-details-marker { display: none; }
     const b = S.band, name = (S.settings && S.settings.bandName) || bandLabel(b);
     const alone = !Object.keys(S.members).some((id) => id !== account.uid);
     if (!confirm(alone ? `Sei l'ultimo rimasto in “${name}”: uscendo, la band e tutte le sue canzoni vengono cancellate per sempre. Vuoi uscire?`
-      : `Vuoi uscire da “${name}”? Per rientrare ti servirà un nuovo link d'invito.`)) return;
+      : `Vuoi uscire da “${name}”? Per rientrare ti servirà un nuovo link d'invito.${amAdmin() ? " Il ruolo di admin passerà a un altro della band." : ""}`)) return;
     stopApp(); showOnboard("wait");
     try {
       await leaveBand(b, account.uid);
