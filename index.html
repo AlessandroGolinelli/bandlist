@@ -155,6 +155,8 @@ input:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visibl
 .member-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14.5px; min-height: 34px; }
 .account-box { display: flex; flex-direction: column; gap: 10px; border-top: 1.5px solid var(--line); padding-top: 14px; }
 .member-list .btn.quiet, .btn.quiet.danger { color: var(--red); }
+.member-list li.gone > span { color: var(--muted); text-decoration: line-through; }
+.member-list .btn.quiet.unkick { color: var(--blue); font-variant-numeric: tabular-nums; }
 .legal { font-size: 12.5px; color: var(--muted); text-align: center; }
 
 /* ---------- Header ---------- */
@@ -554,7 +556,8 @@ details.box > summary::-webkit-details-marker { display: none; }
       <div class="band-box" style="display:flex;flex-direction:column;gap:10px">
         <p><strong>Invita nella band.</strong> Manda il link agli altri (per esempio su WhatsApp): chi lo apre ed entra si ritrova nella band.</p>
         <div class="row"><button type="button" class="btn" id="invite-btn">Copia il link d'invito</button>
-          <button type="button" class="btn quiet small" id="invite-new" hidden>Crea un link nuovo</button></div>
+          <button type="button" class="btn quiet small" id="invite-new">Crea un link nuovo</button></div>
+        <p class="small-note">Con un link nuovo quello vecchio smette di valere: utile se l'hai mandato alla persona sbagliata o hai tolto qualcuno.</p>
         <p class="invite-out" id="invite-out"></p>
         <div id="band-members"></div>
         <div id="my-bands"></div>
@@ -1914,6 +1917,8 @@ details.box > summary::-webkit-details-marker { display: none; }
   let base = null;     // the whole database (not limited to one band)
   let account = null;  // { uid, name, legacy, user }
   let authApi = null;  // Firebase auth, null in demo mode
+  const kicked = {};   // people just removed from the band, still undoable: uid -> { name, before, picks, db, band, left, timer }
+  const KICK_UNDO_SECONDS = 8;
   const rndCode = (n) => { const a = "abcdefghjkmnpqrstuvwxyz23456789", r = new Uint32Array(n); crypto.getRandomValues(r); return [...r].map((x) => a[x % a.length]).join(""); };
   const inviteLink = (code) => location.origin + location.pathname + "?invito=" + code;
   const bandLabel = (id) => (account && account.user && account.user.bands && account.user.bands[id]) || "La band";
@@ -2099,7 +2104,6 @@ details.box > summary::-webkit-details-marker { display: none; }
     try {
       const link = inviteLink(await inviteCode(fresh));
       out.textContent = link;
-      $("#invite-new").hidden = false;
       const msg = "Ciao! Unisciti a me su Bandlist!";
       if (navigator.share && matchMedia("(pointer: coarse)").matches) {
         try { await navigator.share({ title: "Bandlist", text: msg, url: link }); return; } catch (e) { if (e && e.name === "AbortError") return; }
@@ -2118,10 +2122,13 @@ details.box > summary::-webkit-details-marker { display: none; }
   }
   function renderBandBox() {
     if (!S.db || !account) return;
-    const ids = Object.keys(S.members).filter((id) => S.members[id] && S.members[id].name)
-      .sort((a, b) => String(S.members[a].name).localeCompare(String(S.members[b].name), "it"));
-    $("#band-members").innerHTML = ids.length ? `<p class="small-note" style="margin-bottom:4px">Nella band (${ids.length}):</p><ul class="member-list">${ids.map((id) =>
-      `<li><span>${esc(S.members[id].name)}${id === S.me ? " <span class=\"small-note\">(tu)</span>" : ""}</span>${id === S.me ? "" : `<button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button>`}</li>`).join("")}</ul>` : "";
+    const inBand = Object.keys(S.members).filter((id) => S.members[id] && S.members[id].name);
+    const gone = Object.keys(kicked).filter((id) => kicked[id].band === S.band && !inBand.includes(id));
+    const nameOf = (id) => String(S.members[id] && S.members[id].name || kicked[id].name);
+    const ids = inBand.concat(gone).sort((a, b) => nameOf(a).localeCompare(nameOf(b), "it"));
+    $("#band-members").innerHTML = ids.length ? `<p class="small-note" style="margin-bottom:4px">Nella band (${inBand.length}):</p><ul class="member-list">${ids.map((id) =>
+      gone.includes(id) ? `<li class="gone"><span>${esc(nameOf(id))}</span><button type="button" class="btn quiet small unkick" data-unkick="${esc(id)}">Annulla (${kicked[id].left})</button></li>`
+      : `<li><span>${esc(nameOf(id))}${id === S.me ? " <span class=\"small-note\">(tu)</span>" : ""}</span>${id === S.me ? "" : `<button type="button" class="btn quiet small" data-kick="${esc(id)}">Togli</button>`}</li>`).join("")}</ul>` : "";
     const bands = Object.entries((account.user && account.user.bands) || {});
     $("#my-bands").innerHTML = bands.length > 1 ? `<p class="small-note" style="margin-bottom:6px">Le tue band (tocca per passare a un'altra):</p><div class="band-list">${bands.map(([id, n]) =>
       `<button type="button" class="btn small ${id === S.band ? "" : "ghost"}" data-band="${esc(id)}" ${id === S.band ? 'aria-current="true"' : ""}>${esc(n)}</button>`).join("")}</div>` : "";
@@ -2132,14 +2139,33 @@ details.box > summary::-webkit-details-marker { display: none; }
     const b = e.target.closest("[data-band]");
     if (b && b.dataset.band !== S.band) openBand(b.dataset.band);
   });
-  // Remove someone from the band (with Annulla). Their votes go too; the songs they added stay.
-  $("#band-members").addEventListener("click", (e) => {
+  // Remove someone from the band. Their votes go too; the songs they added stay.
+  // The name stays in the list with "Annulla (8)" counting down; at 0 it disappears.
+  $("#band-members").addEventListener("click", async (e) => {
+    const u = e.target.closest("[data-unkick]");
+    if (u) {
+      const uid = u.dataset.unkick, k = kicked[uid]; if (!k) return;
+      clearInterval(k.timer); delete kicked[uid];
+      await write(async () => { await k.db.doc("members/" + uid).set(k.before); if (k.picks) await k.db.doc("votes/" + uid).set({ picks: k.picks }); },
+        `${k.name} è di nuovo nella band`);
+      renderBandBox();
+      return;
+    }
     const b = e.target.closest("[data-kick]"); if (!b || !S.db) return;
     const uid = b.dataset.kick, before = S.members[uid], picks = S.votes[uid], db = S.db;
-    if (!before || uid === S.me) return;
-    write(async () => { await db.doc("members/" + uid).delete(); await db.doc("votes/" + uid).delete().catch(() => {}); },
-      `${before.name} non è più nella band. Se ha ancora il link d'invito, creane uno nuovo.`,
-      async () => { await db.doc("members/" + uid).set(before); if (picks) await db.doc("votes/" + uid).set({ picks }); });
+    if (!before || uid === S.me || kicked[uid]) return;
+    const k = kicked[uid] = { name: before.name, before, picks, db, band: S.band, left: KICK_UNDO_SECONDS };
+    k.timer = setInterval(() => {
+      if (kicked[uid] !== k) return clearInterval(k.timer);
+      k.left -= 1;
+      if (k.left <= 0) { clearInterval(k.timer); delete kicked[uid]; renderBandBox(); return; }
+      const btn = $("#band-members").querySelector(`[data-unkick="${CSS.escape(uid)}"]`);
+      if (btn) btn.textContent = `Annulla (${k.left})`;
+    }, 1000);
+    renderBandBox();
+    const ok = await write(async () => { await db.doc("members/" + uid).delete(); await db.doc("votes/" + uid).delete().catch(() => {}); },
+      `${before.name} non è più nella band. Se ha ancora il link d'invito, creane uno nuovo.`);
+    if (!ok) { clearInterval(k.timer); delete kicked[uid]; renderBandBox(); }
   });
 
   // Leave a band. The last one out deletes the band and everything in it.

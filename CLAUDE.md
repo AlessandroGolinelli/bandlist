@@ -52,8 +52,8 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   (se c'è un invito) o "Crea la tua band". Tutti i dati di una band stanno in `bands/{id}/…`: l'app usa sempre
   percorsi corti (`songs/x`) e `bandStore` aggiunge il prefisso (tranne `tunings/`). Impostazioni: "Copia il link
   d'invito" (`?invito=CODICE`, salvato in localStorage `bandlist-invite` finché non si entra), "Crea un link nuovo"
-  (il vecchio smette di valere), elenco membri, passaggio tra le proprie band, "+ Crea un'altra band".
-- **Membri e account** — in Impostazioni l'elenco dei membri ha "Togli" (con Annulla: toglie anche i voti; i voti di chi
+  (sempre visibile; il vecchio smette di valere), elenco membri, passaggio tra le proprie band, "+ Crea un'altra band".
+- **Membri e account** — in Impostazioni l'elenco dei membri ha "Togli" (toglie anche i voti; il nome resta barrato con "Annulla (8)" che conta all'indietro, `kicked`; i voti di chi
   non è più nella band non contano in `voteTally`). "Esci da questa band" (`leaveBand`, con conferma: l'ultimo che esce
   cancella la band e tutti i suoi dati). "Cancella il mio account" (`deleteAccountData` + `user.delete()`: Firebase vuole
   un accesso recente, quindi con Google riapre il popup, con password chiede di uscire e rientrare). Le canzoni aggiunte
