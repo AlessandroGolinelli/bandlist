@@ -45,11 +45,8 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   Spotify), `spotifyId` = id del video/brano, `spotifyUrl` = link. Vedi `parseLink`, `resolveLink`, `linkKind`, `embedUrl`.
   La tendina degli artisti (Apple Music) compare quando c'è un titolo, anche scritto a mano.
 - **Accesso** — "Entra con Google" (popup, non redirect: su iPhone il redirect non va con github.io) oppure
-  email e password (con "Registrati" e "Password dimenticata?"). La band storica entra ancora col **PIN**
-  ("Entri col PIN? Tocca qui": i 5 nomi di `SCALETTA_CONFIG.members`, email `nome@bandlist.app` da `emailFor`,
-  eccezioni in `SCALETTA_CONFIG.logins`). In Impostazioni "Collega il mio Google" (`linkWithPopup`) tiene lo stesso uid.
-  Passaggio al dopo-PIN: chi entra solo col PIN vede in cima il promemoria `#google-nudge` ("Collega il mio Google" / "Dopo");
-  `members/{uid}.pin` (`pinOnly()`, scritto a ogni apertura) e in Impostazioni della band storica la riga "Entrano ancora col PIN: …".
+  email e password (con "Registrati" e "Password dimenticata?", minimo 8 caratteri). Il vecchio **PIN** della band storica
+  è stato tolto (25/11/2026). In Impostazioni "Collega il mio Google" (`linkWithPopup`) tiene lo stesso uid.
 - **Band** — dopo l'accesso `afterLogin` legge `users/{uid}`: apre la band corrente, oppure mostra "Unisciti a …"
   (se c'è un invito) o "Crea la tua band". Tutti i dati di una band stanno in `bands/{id}/…`: l'app usa sempre
   percorsi corti (`songs/x`) e `bandStore` aggiunge il prefisso (tranne `tunings/`). Impostazioni: "Copia il link
@@ -64,9 +61,9 @@ Interfaccia e testi in **italiano**. Il proprietario non è un programmatore: sp
   un accesso recente, quindi con Google riapre il popup, con password chiede di uscire e rientrare). Le canzoni aggiunte
   restano alla band. Chi ha creato una band può aggiungersi da solo solo nei primi 10 minuti (regole).
 - **Privacy** — `privacy.html` (pagina a parte, linkata da accesso e Impostazioni). Se si salvano dati nuovi, aggiornala.
-- **Trasloco della band storica** — i suoi dati erano in cima al database. Al primo accesso col PIN, `legacyJoin` /
+- **Trasloco della band storica** — i suoi dati erano in cima al database. Fatto una volta (al primo accesso col vecchio PIN): `legacyJoin` /
   `migrateLegacy` li **copiano** (senza cancellarli) in `bands/fondatori` (`SCALETTA_CONFIG.legacyBand`), con
-  membri e voti di tutti. La copia vecchia resta in sola lettura.
+  membri e voti di tutti. La copia vecchia resta in sola lettura. Ora il trasloco lo fa solo la modalità prova.
 
 ## Struttura del file
 
@@ -133,6 +130,5 @@ GitHub Pages da `main`, cartella root → https://alessandrogolinelli.github.io/
 3. **Link Spotify** delle canzoni (soprattutto Intercity ed Easier, pezzi della band): si possono mettere nel
    `seed` (quarto elemento) prima del primo accesso, oppure dall'app con ✎. Le copertine mancanti si
    recuperano da sole (`fillMissingArt`).
-4. **Aprire alle altre band** (in quest'ordine): pubblicare l'app nuova e le regole nuove insieme; uno della band
-   storica entra col PIN (fa il trasloco in `bands/fondatori`); solo dopo attivare Google in Authentication ›
-   Sign-in method e riaprire le registrazioni (Authentication › Impostazioni › Azioni utente).
+4. ~~Aprire alle altre band~~ fatto: trasloco in `bands/fondatori`, Google attivo, PIN tolto.
+5. **Firebase, a mano:** Authentication › Impostazioni › Criteri per le password, minimo 8 caratteri, "Richiedi".

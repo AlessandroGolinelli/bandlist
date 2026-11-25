@@ -15,14 +15,14 @@ e la persona perde accordature e voti.
 - **Firebase (a mano):** Authentication › Sign-in method › attivare **Google**. È gratis sul piano Spark.
   Il dominio `alessandrogolinelli.github.io` è già autorizzato.
 - **Impostazioni dell'app:** pulsante **"Collega il mio Google"** (`linkWithPopup`). Ognuno lo preme una volta,
-  dopo essere entrato col PIN: l'uid resta lo stesso e non si perde nulla.
+  dopo essere entrato: l'uid resta lo stesso e non si perde nulla.
 - **Schermata d'accesso:** pulsante **"Entra con Google"** (`signInWithPopup`).
 - **Usare il popup, non il redirect:** su iPhone/Safari il redirect spesso non funziona per i siti su
   github.io, perché il dominio di Firebase è diverso.
 - **Sicurezza:** con Google chiunque abbia un account può autenticarsi. In `regole-firestore.txt` bisogna
   quindi permettere letture e scritture solo agli uid dei membri della band. A uno sconosciuto si mostra
   "Non sei nella band". Le regole vanno poi ricopiate in Firebase.
-- **Il PIN resta come riserva** (telefono nuovo, problemi con Google). Si potrà togliere più avanti.
+- **Il PIN** è stato tolto il 25/11/2026: Goli ha collegato Google, gli altri sono rientrati col link d'invito.
 
 ---
 
@@ -106,18 +106,10 @@ Prima serve la versione per più band (punto 2b): uno spazio per band, registraz
 
 ---
 
-## 4. Password di almeno 8 caratteri anche su Firebase (dopo aver tolto il PIN)
+## 4. Password di almeno 8 caratteri anche su Firebase
 
-Oggi il minimo di 8 caratteri lo controlla solo l'app, quando qualcuno si registra con email.
-Su Firebase non si può ancora attivare, perché i PIN della band storica sono di 6 cifre:
-con la regola "minimo 8" la band storica resterebbe chiusa fuori.
+**Fatto nell'app:** il PIN non c'è più (tutti sono rientrati con Google) e chi si registra con email
+deve scegliere una password di almeno 8 caratteri.
 
-**Come sapere quando:** chi entra col PIN vede in cima all'app il promemoria "Collega il mio Google".
-In ⚙ Impostazioni della band storica, sotto i membri, c'è la riga "Entrano ancora col PIN: …":
-quando dice "Tutti hanno collegato Google", si può procedere.
-
-Quando tutti e 5 avranno collegato Google e il PIN sarà stato tolto dall'app:
-- **Firebase:** Authentication › Impostazioni › **Criteri per le password**, minimo 8 caratteri, modalità "Richiedi".
-- **App:** togliere il pulsante "Entri col PIN? Tocca qui" e il codice del PIN
-  (`SCALETTA_CONFIG.members`/`logins` restano solo per il trasloco, se serve ancora).
-  Via anche il promemoria `#google-nudge`, `pinOnly()`, il campo `pin` dei membri e la riga in Impostazioni.
+**Da fare a mano su Firebase:** Authentication › Impostazioni › **Criteri per le password**,
+minimo 8 caratteri, modalità "Richiedi". Così la regola vale anche fuori dall'app.
